@@ -1,0 +1,11 @@
+{
+  "test_list_iris_root_dir_count": {
+    "name": "test_list_iris_root_dir_count",
+    "metric_type": "gauge",
+    "execution_frequency": 30,
+    "export_method": "textfile",
+    "bash_command": "pwd",
+    "help": "The number files and directories in the root level of this iris project",
+    "execution_timeout": 29
+  }
+}

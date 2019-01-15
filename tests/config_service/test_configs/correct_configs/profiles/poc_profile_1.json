@@ -1,0 +1,4 @@
+{
+  "profile_name": "poc_profile_1",
+  "metrics": ["node_logged_in_users"]
+}

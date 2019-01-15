@@ -1,0 +1,42 @@
+import json
+import os
+from logging import Logger
+from typing import Dict, List, Set, Tuple, Any
+
+
+def find_list_duplicate(list_data: List[Any]) -> Any:
+    unique_data: Set = set()
+    for data in list_data:
+        if data in unique_data:
+            return data
+        unique_data.add(data)
+
+    return None
+
+
+def load_json_config(config_path: str, logger: Logger) -> Dict[str, Any]:
+    if not os.path.isfile(config_path):
+        err_msg = '{0} is not a file. Check if the path is correct'.format(config_path)
+        logger.error(err_msg)
+        raise OSError(err_msg)
+
+    try:
+        with open(config_path, 'r') as stream:
+            config_json = json.load(stream, object_pairs_hook=_detect_duplicate_json_keys)  # type: ignore
+    except Exception as e:
+        err_msg = 'Error loading the config file {0}. Err: {1}'.format(config_path, e)
+        logger.error(err_msg)
+        raise Exception(err_msg)
+
+    return config_json
+
+
+def _detect_duplicate_json_keys(pairs: List[Tuple]) -> Dict[str, Any]:
+    config_json: Dict = {}
+
+    for key, val in pairs:
+        if key in config_json:
+            raise ValueError('The json file has duplicate keys: {0}'.format(key))
+        config_json[key] = val
+
+    return config_json

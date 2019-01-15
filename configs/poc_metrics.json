@@ -1,0 +1,37 @@
+{
+  "node_logged_in_users": {
+    "help": "The number of users currently logged into the node",
+    "metric_type": "gauge",
+    "execution_frequency": 30,
+    "bash_command": "who | wc -l",
+    "export_method": "textfile"
+  },
+  "node_running_processes": {
+    "help": "The number of running processes on the node",
+    "metric_type": "gauge",
+    "execution_frequency": 20,
+    "bash_command": "ps ax | wc -l",
+    "export_method": "textfile"
+  },
+  "zombie_processes_count": {
+    "help": "The number of current zombie processes",
+    "metric_type": "gauge",
+    "execution_frequency": 20,
+    "bash_command": "ps aux | grep '<defunct>$' | wc -l",
+    "export_method": "textfile"
+  },
+  "node_open_file_descriptors": {
+    "help": "The number of open file descriptors on the node",
+    "metric_type": "gauge",
+    "execution_frequency": 12,
+    "bash_command": "lsof | wc -l",
+    "export_method": "textfile"
+  },
+  "bs_incorrect_metric": {
+    "help": "intentionally incorrect metric",
+    "metric_type": "gauge",
+    "execution_frequency": 11,
+    "bash_command": "aklsdhfkla",
+    "export_method": "textfile"
+  }
+}

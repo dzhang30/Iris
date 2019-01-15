@@ -1,0 +1,11 @@
+{
+  "test_incorrect_metric": {
+    "name": "test_incorrect_metric",
+    "metric_type": "gauge",
+    "execution_frequency": 11,
+    "export_method": "textfile",
+    "bash_command": "test_incorrect_metric",
+    "help": "intentionally incorrect metric",
+    "execution_timeout": 10
+  }
+}
