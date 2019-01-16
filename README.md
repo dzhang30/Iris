@@ -1,5 +1,5 @@
 # Design Doc
-This is the project that I am currently working on at iheartradio and I am the sole dev contributer!
+This is the project that I am currently working on at iheartradio. I am the sole engineering contributer
 https://docs.google.com/document/d/1xIBwOCU0p7NjxlX5_Y98w9nitYV5z7rnCT491lMl-QE/edit?usp=sharing
 
 # Iris
