@@ -1,0 +1,33 @@
+---
+- name: install and configure iris
+  hosts: localhost
+  become: yes
+
+  vars:
+    oracle_db_port_value: 1521
+
+  tasks:
+  - name: Create iris directory
+    file:
+      path: /opt/iris/
+      state: directory
+      mode: 770
+      recurse: yes
+
+  - name: move decrypted aws_credentials into file
+      copy:
+        content: "{{ aws_credentials }}"
+        dest: /opt/iris/aws_credentials
+
+  - name: Get the Iris executable
+    get_url:
+      url: https://s3.amazonaws.com/ihr-irs/poc_metrics.json
+      dest: /opt/iris/iris
+      mode: 660
+
+  - name: Setup service Iris
+    service:
+      name: iris
+      pattern: /opt/iris/iris
+      state: started
+      enabled: yes

@@ -1,17 +1,15 @@
-import daemon
 import inspect
 import logging
 import multiprocessing
 import os
-import sys
 
-# Set python project directory paths for Iris
-current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-project_root_dir = os.path.dirname(current_dir)
-sys.path.insert(0, project_root_dir)
+import daemon
 
 from iris.config_service.run import run_config_service  # noqa: E402
 from iris.scheduler.run import run_scheduler  # noqa: E402
+
+project_root_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+current_dir = os.path.join(project_root_dir, 'iris')
 
 
 def setup_iris_main_logger() -> logging.Logger:

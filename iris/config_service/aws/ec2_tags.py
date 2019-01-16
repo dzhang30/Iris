@@ -13,13 +13,13 @@ from botocore.exceptions import ClientError
 class EC2Tags:
     logger: Logger
     region_name: str = 'us-east-1'
-    instance_id: str = 'i-379f14b7'  # hardcoding stg-tvclient101's instance_id until we figure out how to provision
 
     ec2_metadata_url = 'http://169.254.169.254/latest/meta-data/'
 
     def get_iris_tags(self) -> Dict[str, str]:
         instance_tags: List = []
         ec2_error = ClientError({}, '')
+        self.instance_id = self._request_instance_id()
 
         profiles = self._get_aws_profiles()
         for profile in profiles:  # we must loop through each profile as a host won't know what profile it's in

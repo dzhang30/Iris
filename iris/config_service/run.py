@@ -11,7 +11,7 @@ logger = logging.getLogger('iris.config_service')
 
 
 def run_config_service(aws_profile: str, bucket_name: str, upload_from_path: str, download_to_path: str,
-                       local_config_path: str, aws_creds_path: str = None, ) -> None:
+                       local_config_path: str, aws_creds_path: str = None) -> None:
     # Run config service S3 puller to get the config files from iris bucket
     while True:
         logger.info('Starting Config_Service')

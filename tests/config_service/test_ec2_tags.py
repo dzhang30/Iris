@@ -12,7 +12,9 @@ test_logger = logging.getLogger('iris.test')
 
 @patch('iris.config_service.aws.ec2_tags.os')
 @patch('iris.config_service.aws.ec2_tags.boto3')
-def test_successful_get_tags(mock_boto3, mock_os):
+@patch('iris.config_service.aws.ec2_tags.requests')
+def test_successful_get_tags(mock_requests, mock_boto3, mock_os):
+    mock_requests.get.return_value.text = 'i-test'
     mock_boto3.Session.return_value.resource.return_value.Instance.return_value.tags = [
         {'Key': 'ihr:iris:profile', 'Value': 'test0'}, {'Key': 'ihr:iris:enabled', 'Value': 'true'}]
 
@@ -23,9 +25,11 @@ def test_successful_get_tags(mock_boto3, mock_os):
 
 @patch('iris.config_service.aws.ec2_tags.os')
 @patch('iris.config_service.aws.ec2_tags.boto3')
-def test_get_tags_failure(mock_boto3, mock_os):
+@patch('iris.config_service.aws.ec2_tags.requests')
+def test_get_tags_failure(mock_requests, mock_boto3, mock_os):
     test_err = ClientError({'Error': {'Code': 000, 'Message': 'test message'}}, 'test get aws instance')
 
+    mock_requests.get.return_value.text = 'i-test'
     mock_boto3.Session.return_value.resource.return_value.Instance.side_effect = test_err
     mock_os.getenv.return_value = 'tests/config_service/test_configs/test_aws_credentials'
 

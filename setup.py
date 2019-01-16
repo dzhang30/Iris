@@ -3,13 +3,15 @@ from setuptools import setup
 requires = [
     'aiofiles==0.4.0',
     'boto3==1.9.66',
+    'chardet==3.0.4',
     'coverage==4.5.2',
     'flake8==3.6.0',
     'flake8-import-order==0.18',
     'mypy==0.641',
     'pytest==3.10.0',
     'pytest-asyncio==0.9.0',
-    'requests==2.20.1',
+    'python-daemon==2.2.0',
+    'requests==2.21.0',
 ]
 
 test_requirements = [
