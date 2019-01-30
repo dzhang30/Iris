@@ -8,18 +8,31 @@ import boto3
 import requests
 from botocore.exceptions import ClientError
 
+from iris.utils import util
+
 
 @dataclass
 class EC2Tags:
+    aws_creds_path: str
+    dev_mode: bool
     logger: Logger
     region_name: str = 'us-east-1'
 
     ec2_metadata_url = 'http://169.254.169.254/latest/meta-data/'
 
+    def __post_init__(self) -> None:
+        util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
+
+        os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.aws_creds_path
+
+        if self.dev_mode:
+            self.instance_id = 'i-379f14b7'  # local dev will default to using stg-tvclient101.ihrcloud.net
+        else:
+            self.instance_id = self._request_instance_id()
+
     def get_iris_tags(self) -> Dict[str, str]:
         instance_tags: List = []
         ec2_error = ClientError({}, '')
-        self.instance_id = self._request_instance_id()
 
         profiles = self._get_aws_profiles()
         for profile in profiles:  # we must loop through each profile as a host won't know what profile it's in
@@ -35,7 +48,7 @@ class EC2Tags:
             err_code = ec2_error.response['Error']['Code']
             err_msg = ec2_error.response['Error']['Message']
             new_err_msg = '{0}. Could not find the instance in any defined aws profiles {1}'.format(err_msg, profiles)
-            self.logger.error(ec2_error)
+            self.logger.error(new_err_msg)
             raise ClientError({'Error': {'Code': err_code, 'Message': new_err_msg}}, ec2_error.operation_name)
 
         iris_tags = self._extract_iris_tags(instance_tags)
@@ -45,12 +58,10 @@ class EC2Tags:
         return iris_tags
 
     def _get_aws_profiles(self) -> List[str]:
-        aws_credentials_path = os.getenv('AWS_SHARED_CREDENTIALS_FILE')
-
         config = ConfigParser()
-        file_read = config.read(aws_credentials_path)  # type: ignore
+        file_read = config.read(self.aws_creds_path)
         if not file_read:
-            err_msg = 'Could not open/read the aws credentials file: {0}'.format(aws_credentials_path)
+            err_msg = 'Could not open/read the aws credentials file: {0}'.format(self.aws_creds_path)
             self.logger.error(err_msg)
             raise OSError(err_msg)
 
@@ -63,10 +74,14 @@ class EC2Tags:
                 iris_tags['ihr:iris:profile'] = tag['Value']
             if tag['Key'] == 'ihr:iris:enabled':
                 iris_tags['ihr:iris:enabled'] = tag['Value']
+            if tag['Key'] == 'ihr:application:environment':
+                iris_tags['ihr:application:environment'] = tag['Value']
+            if tag['Key'] == 'Name':
+                iris_tags['name'] = tag['Value']
 
         if 'ihr:iris:profile' not in iris_tags or 'ihr:iris:enabled' not in iris_tags:
-            err_msg = 'Instance {} does not have both iris tags ihr:iris:profile & ihr:iris:enabled. It only has {}'. \
-                format(self.instance_id, iris_tags)
+            err_msg = 'Instance {} does not have tags ihr:iris:profile & ihr:iris:enabled. It only has {}'.format(
+                self.instance_id, iris_tags)
             self.logger.error(err_msg)
             raise MissingIrisTagsError(err_msg)
 

@@ -12,30 +12,47 @@ from iris.config_service.configs import Metric  # noqa: E402
 
 @dataclass
 class MetricResult:
-    name: str
+    metric: Metric
     pid: int
+    timeout: bool
     return_code: int
-    result: str
+    shell_output: str
+    logger: Logger
+
+    err_msg_format = 'Metric {} must output a number via command {}. Current result {}'
+
+    def __post_init__(self) -> None:
+        if self.return_code != 0:
+            self.prom_result_value = -1.0
+        else:
+            try:
+                self.prom_result_value = float(self.shell_output)
+            except ValueError:
+                err_msg = self.err_msg_format.format(self.metric.name, self.metric.bash_command, self.shell_output)
+                self.logger.error(err_msg)
+                self.prom_result_value = -1.0
 
     def __str__(self) -> str:
         template_str = 'MetricResult for: \'{}\'. PID: {}. Return_Code: {}. Result_Output: \'{}\''
-        return template_str.format(self.name, self.pid, self.return_code, self.result)
+        return template_str.format(self.metric.name, self.pid, self.return_code, self.shell_output)
 
     def to_prom_format(self) -> str:
-        return ''
+        prom_format = '{}{{execution_frequency="{}",execution_timeout="{}",return_code="{}",timeout="{}"}} {}'
+        return prom_format.format(self.metric.name, self.metric.execution_frequency, self.metric.execution_timeout,
+                                  self.return_code, self.timeout, self.prom_result_value)
 
 
 @dataclass
 class Scheduler:
     metrics: List[Metric]
-    prom_output_path: str
+    prom_dir_path: str
     logger: Logger
 
     def run(self) -> List[MetricResult]:
         loop = asyncio.get_event_loop()
         res = loop.run_until_complete(self.gather_asyncio_metrics())
 
-        self.logger.info('Finished writing to all prom files at: {}'.format(self.prom_output_path))
+        self.logger.info('Finished writing to all prom files at: {}'.format(self.prom_dir_path))
 
         return res
 
@@ -45,11 +62,13 @@ class Scheduler:
         return await asyncio.gather(*metrics_tasks)  # type: ignore
 
     async def run_asyncio_metric_task(self, metric: Metric) -> Optional[MetricResult]:
-        metric_prom_file_path = os.path.join(self.prom_output_path, metric.name)
+        metric_prom_file_path = os.path.join(self.prom_dir_path, '{}.prom'.format(metric.name))
 
         if os.path.isfile(metric_prom_file_path):
-            prom_file_last_modified_time = os.stat(metric_prom_file_path).st_mtime
-            if time.time() - prom_file_last_modified_time >= metric.execution_frequency:
+            prom_file_last_mod_time = os.stat(metric_prom_file_path).st_mtime
+            elapsed_time = time.time() - prom_file_last_mod_time
+
+            if elapsed_time >= metric.execution_frequency:
                 return await self._run_asyncio_metric_task(metric_prom_file_path, metric)
             else:
                 self.logger.info('Not running metric: {} yet. Execution frequency not met.'.format(metric.name))
@@ -74,13 +93,35 @@ class Scheduler:
         _, pending = await asyncio.wait([task], timeout=metric.execution_timeout)
 
         if proc.returncode == 0:
-            result = MetricResult(metric.name, proc.pid, proc.returncode, task.result()[0].decode('utf-8').strip())
+            result = MetricResult(
+                metric=metric,
+                pid=proc.pid,
+                timeout=False,
+                return_code=proc.returncode,
+                shell_output=task.result()[0].decode('utf-8').strip(),
+                logger=self.logger
+            )
             self.logger.info(result)
         else:
+            # a process object in a pending state will not have its return_code attribute set, so we default it to -1
             if task in pending:
-                result = MetricResult(metric.name, proc.pid, -1, 'TIMEOUT')
+                result = MetricResult(
+                    metric=metric,
+                    pid=proc.pid,
+                    timeout=True,
+                    return_code=-1,
+                    shell_output='TIMEOUT',
+                    logger=self.logger
+                )
             else:
-                result = MetricResult(metric.name, proc.pid, proc.returncode, task.result()[1].decode('utf-8').strip())
+                result = MetricResult(
+                    metric=metric,
+                    pid=proc.pid,
+                    timeout=False,
+                    return_code=proc.returncode,
+                    shell_output=task.result()[1].decode('utf-8').strip(),
+                    logger=self.logger
+                )
             self.logger.error(result)
             task.cancel()
 
@@ -88,4 +129,4 @@ class Scheduler:
 
     async def _write_asyncio_metric_result(self, prom_file_path: str, metric_result: MetricResult) -> None:
         async with aiofiles.open(prom_file_path, 'w') as prom_file:
-            await prom_file.write(str(metric_result))
+            await prom_file.write(metric_result.to_prom_format())

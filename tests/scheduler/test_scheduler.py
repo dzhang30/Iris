@@ -1,5 +1,4 @@
 import logging
-import os
 from unittest import mock
 
 import aiofiles
@@ -10,13 +9,15 @@ from iris.scheduler.scheduler import Scheduler
 
 test_global_config_path = 'tests/scheduler/test_configs/global_config.json'
 test_local_config_path = 'tests/scheduler/test_configs/local_config.json'
-test_local_config_incorrect_path = 'tests/scheduler/test_configs/local_config_incorrect.json'
 test_prom_output_path = 'tests/scheduler/test_prom_files'
+
+test_local_config_incorrect_path = 'tests/scheduler/test_configs/local_config_incorrect.json'
 
 logger = logging.getLogger('iris.test')
 
 aiofiles.threadpool.wrap.register(mock.MagicMock)(
-    lambda *args, **kwargs: aiofiles.threadpool.AsyncBufferedIOBase(*args, **kwargs))
+    lambda *args, **kwargs: aiofiles.threadpool.AsyncBufferedIOBase(*args, **kwargs)
+)
 
 
 @pytest.mark.asyncio
@@ -32,7 +33,8 @@ async def test_scheduler_success():
     with mock.patch('aiofiles.threadpool.sync_open', return_value=mock_file):
         metric_result = await scheduler.gather_asyncio_metrics()
 
-    assert metric_result[0].result == os.getcwd()
+    assert metric_result[0].shell_output == '5'
+    assert metric_result[0].prom_result_value == 5
     assert metric_result[0].return_code == 0
 
 
@@ -49,5 +51,6 @@ async def test_scheduler_failure():
     with mock.patch('aiofiles.threadpool.sync_open', return_value=mock_file):
         metric_result = await scheduler.gather_asyncio_metrics()
 
-    assert metric_result[0].result == '/bin/sh: test_incorrect_metric: command not found'
+    assert metric_result[0].shell_output == '/bin/sh: test_incorrect_metric: command not found'
+    assert metric_result[0].prom_result_value == -1
     assert metric_result[0].return_code == 127

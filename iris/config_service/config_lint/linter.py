@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import Any, Tuple, Dict, Optional
 
-from iris.config_service.utils import util
 from iris.config_service.configs import GlobalConfig, Metric, Profile
+from iris.utils import util
 
 
 @dataclass
@@ -12,7 +12,7 @@ class Linter:
     logger: Logger
 
     def lint_global_config(self, global_config_path: str) -> GlobalConfig:
-        global_config_json = util.load_json_config(global_config_path, self.logger)
+        global_config_json = util.load_json_config(global_config_path, 'global_config', self.logger)
         global_config = self._json_to_global(global_config_json)
 
         self.logger.info('Linted global_config file & transformed it into a GlobalConfig object')
@@ -20,7 +20,7 @@ class Linter:
         return global_config
 
     def lint_metrics_config(self, global_config: GlobalConfig, metrics_config_path: str) -> Dict[str, Metric]:
-        metrics_json = util.load_json_config(metrics_config_path, self.logger)
+        metrics_json = util.load_json_config(metrics_config_path, 'metrics', self.logger)
         metrics = {name: self._json_to_metric(global_config, name, content) for name, content in metrics_json.items()}
 
         self.logger.info('Linted metrics_config file & transformed it into a dict of Metrics objects')
@@ -28,10 +28,7 @@ class Linter:
         return metrics
 
     def lint_profile_configs(self, profile_configs_path: str) -> Dict[str, Profile]:
-        if not os.path.isdir(profile_configs_path):
-            err_msg = '{0} is not a directory'.format(profile_configs_path)
-            self.logger.error(err_msg)
-            raise OSError(err_msg)
+        util.check_dir_exists(dir_path=profile_configs_path, dir_type='profile_configs', logger=self.logger)
 
         profile_configs = os.listdir(profile_configs_path)
 
@@ -78,7 +75,7 @@ class Linter:
         )
 
     def _json_to_profile(self, profile_configs_path: str) -> Profile:
-        profile_config = util.load_json_config(profile_configs_path, self.logger)
+        profile_config = util.load_json_config(profile_configs_path, 'profile', self.logger)
         return Profile(name=profile_config['profile_name'], metrics=profile_config['metrics'], logger=self.logger)
 
     def _diff_profile_name_filename(self, profiles: Dict[str, Profile]) -> Optional[Tuple[str, str]]:

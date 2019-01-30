@@ -6,15 +6,22 @@ from typing import List
 
 import boto3
 
+from iris.utils import util
+
 
 @dataclass
 class S3:
-    bucket_name: str
+    aws_creds_path: str
     aws_profile_name: str
+    bucket_name: str
     logger: Logger
     region_name: str = 'us-east-1'
 
     def __post_init__(self) -> None:
+        util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
+
+        os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.aws_creds_path
+
         s3 = boto3.Session(profile_name=self.aws_profile_name, region_name=self.region_name).resource('s3')
         self._bucket = s3.Bucket(self.bucket_name)
 
@@ -27,7 +34,8 @@ class S3:
             downloaded_files.append(object_.key)
             obj_dir_path = '/'.join(object_.key.split('/')[:-1])
 
-            os.makedirs(os.path.join(download_path, obj_dir_path), exist_ok=True)  # won't make dir if it already exists
+            # make directories contained in s3 bucket. Won't make dirs if they already exists
+            os.makedirs(os.path.join(download_path, obj_dir_path), exist_ok=True)
 
             self._bucket.download_file(object_.key, os.path.join(download_path, object_.key))
 
@@ -35,41 +43,35 @@ class S3:
 
         return downloaded_files
 
-    def upload_object(self, object_path: str) -> str:
-        if not os.path.isfile(object_path):
-            err_msg = 'Could not upload the file {}. Check if the path is correct'.format(object_path)
-            self.logger.error('ValueError: {}'.format(err_msg))
-            raise ValueError(err_msg)
+    def upload_object(self, upload_file_path: str) -> str:
+        util.check_file_exists(file_path=upload_file_path, file_type='upload_file', logger=self.logger)
 
-        object_key = object_path.rsplit('/')[-1]
-        self._bucket.upload_file(object_path, object_key)
+        object_key = upload_file_path.rsplit('/')[-1]
+        self._bucket.upload_file(upload_file_path, object_key)
 
         self.logger.info('Uploaded file object: {}'.format(object_key))
 
         return object_key
 
-    def upload_directory(self, object_path: str) -> List[str]:
-        if not os.path.isdir(object_path):
-            err_msg = 'Could not upload the directory {}. Check if the path is correct'.format(object_path)
-            self.logger.error('ValueError: {}'.format(err_msg))
-            raise ValueError(err_msg)
+    def upload_directory(self, upload_dir_path: str) -> List[str]:
+        util.check_dir_exists(dir_path=upload_dir_path, dir_type='upload', logger=self.logger)
 
-        if object_path[-1] != '/':
-            object_path += '/'
+        if upload_dir_path[-1] != '/':
+            upload_dir_path += '/'
 
         result = []
-        for dir_path, _, files in os.walk(object_path):
+        for dir_path, _, files in os.walk(upload_dir_path):
             for file_ in files:
-                object_key = self._create_object_key(dir_path, object_path, file_)
+                object_key = self._create_object_key(dir_path, upload_dir_path, file_)
                 self._bucket.upload_file(os.path.join(dir_path, file_), object_key)
 
                 result.append(object_key)
 
-        self.logger.info('Uploaded directory: {} with content: {}'.format(object_path, result))
+        self.logger.info('Uploaded directory: {} with content: {}'.format(upload_dir_path, result))
 
         return result
 
     @staticmethod
-    def _create_object_key(dir_path: str, object_path: str, object_file: str) -> str:
-        object_dir = dir_path.replace(object_path, '')
-        return '{}/{}'.format(object_dir, object_file) if object_dir else object_file
+    def _create_object_key(dir_path: str, upload_dir_path: str, object_file: str) -> str:
+        object_dir = dir_path.replace(upload_dir_path, '')
+        return os.path.join(object_dir, object_file) if object_dir else object_file

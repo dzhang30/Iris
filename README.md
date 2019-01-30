@@ -8,7 +8,7 @@ There is a need to capture metrics beyond the basics of what are provided by the
 ## One-Time Setup
 These steps will install the pre-requisites for running iris on your local machine.
 
-* Install `brew` and `python 3.7`
+* Install `brew` and `python 3.7` (based on your setup, you might have to specify python version in the command line )
 * Setup your virtualenv using `direnv`
 
 ```bash
@@ -22,7 +22,7 @@ brew install direnv python3
 eval "$(direnv hook $SHELL)"  
 ```
 
-## Installing Custom Metrics
+## Installing Iris
 
 * Checkout iris repo from github
 * Install iris into your virtual environment
@@ -42,15 +42,28 @@ python setup.py install
 
 ```
 
-## Testing, Linting, Type Checking and Coverage
+## Local Development and Testing
+To run and test the Iris code locally, open `iris/main.py` and set `IRIS_MODE = 'dev'`. This will direct all calls to the boto3 EC2 API to point at our tvclient host
+`stg-tvclient101.ihrcloud.net (i-379f14b7)`. This logic is included to make local dev easy/seamless since our dev machines are not part of our EC2 hosts.
+
+After you have completed local development and testing:
+* `tox` runs successfully (unit testing, linting, type checking, coverage)
+* pyinstaller binary builds and runs successfully
+
+Please make sure you go back to `iris/main.py` and set `IRIS_MODE = 'prod'` committing and deploying
+
+## Unit Testing, Linting, Type Checking and Coverage
 We use `Tox` to automate and run our testing environment. This includes running `coverage`, `pytest` via setup.py test, `mypy` for type checking, and `flake8` for linting  
 
 ```bash
 tox
 ```
 
+
 ## Creating Iris executable via Pyinstaller
-We use `Pyinstaller` to transform Iris into an executable file that will run Iris as a daemon.   
+We use `Pyinstaller` to transform Iris into an executable file that will run Iris as a daemon.
+Use this as the final step to local testing by making sure the binary builds and runs correctly.
+
 
 ```bash
 # Download Pyinstaller
@@ -66,9 +79,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run Pyinstaller and set the path argument to include the directory that holds all of Iris' dependencies
-pyinstaller main.py --paths=venv/lib/python3.7/site-packages/
+pyinstaller --paths=venv/lib/python3.7/site-packages/ --clean main.py
 
 # Run Iris executable
+./dist/main/main
+
+# To rebuild the Iris executable, we first remove the directories it produced and then run the commands
+./clean.sh
+pyinstaller --paths=venv/lib/python3.7/site-packages/ --clean main.py
 ./dist/main/main
 ```
 
