@@ -4,10 +4,6 @@ from logging import Logger
 from typing import Dict, List, Set, Tuple, Any
 
 
-def read_config_file() -> None:
-    pass
-
-
 def check_file_exists(file_path: str, file_type: str, logger: Logger) -> bool:
     if not os.path.isfile(file_path):
         err_msg = 'The {} file path {} does not exist or is incorrect. Check the path'.format(file_type, file_path)
@@ -66,3 +62,8 @@ def _detect_duplicate_json_keys(pairs: List[Tuple]) -> Dict[str, Any]:
         config_json[key] = val
 
     return config_json
+
+
+def read_config_file(config_path: str) -> None:
+    # TODO: read config file in ini/cfg format
+    pass
