@@ -4,6 +4,10 @@ from logging import Logger
 from typing import Dict, List, Set, Tuple, Any
 
 
+def read_config_file() -> None:
+    pass
+
+
 def check_file_exists(file_path: str, file_type: str, logger: Logger) -> bool:
     if not os.path.isfile(file_path):
         err_msg = 'The {} file path {} does not exist or is incorrect. Check the path'.format(file_type, file_path)
@@ -22,14 +26,21 @@ def check_dir_exists(dir_path: str, dir_type: str, logger: Logger) -> bool:
     return True
 
 
-def find_list_duplicate(list_data: List[Any]) -> Any:
-    unique_data: Set = set()
-    for data in list_data:
-        if data in unique_data:
-            return data
-        unique_data.add(data)
+def detect_list_duplicates(items: List[Any], item_description: str, logger: Logger) -> List[Any]:
+    duplicate_items = []
+    unique_items: Set = set()
 
-    return None
+    for item in items:
+        if item in unique_items:
+            duplicate_items.append(item)
+        unique_items.add(item)
+
+    if duplicate_items:
+        err_msg = 'There are duplicate {}: {}'.format(item_description, duplicate_items)
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    return duplicate_items
 
 
 def load_json_config(config_path: str, config_type: str, logger: Logger) -> Dict[str, Any]:

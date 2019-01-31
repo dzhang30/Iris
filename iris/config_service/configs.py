@@ -95,11 +95,7 @@ class Profile:
     logger: Logger
 
     def __post_init__(self) -> None:
-        dup_metric = util.find_list_duplicate(self.metrics)
-        if dup_metric:
-            err_msg = 'Invalid metrics: Duplicate metric in Profile \'{}\': {}'.format(self.name, dup_metric)
-            self.logger.error(err_msg)
-            raise ValueError(err_msg)
+        util.detect_list_duplicates(self.metrics, '{} profile metrics'.format(self.name), self.logger)
 
     def __str__(self) -> str:
         return 'Profile {} containing the metrics: {}'.format(self.name, self.metrics)

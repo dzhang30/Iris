@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from logging import Logger
-from typing import Any, Tuple, Dict, Optional
+from typing import Any, Tuple, Dict, List
 
 from iris.config_service.configs import GlobalConfig, Metric, Profile
 from iris.utils import util
@@ -30,24 +30,16 @@ class Linter:
     def lint_profile_configs(self, profile_configs_path: str) -> Dict[str, Profile]:
         util.check_dir_exists(dir_path=profile_configs_path, dir_type='profile_configs', logger=self.logger)
 
-        profile_configs = os.listdir(profile_configs_path)
+        profile_config_files = os.listdir(profile_configs_path)
 
-        duplicate_config = util.find_list_duplicate(profile_configs)
-        if duplicate_config:
-            err_msg = 'There are duplicate profile file names: {0}'.format(duplicate_config)
-            self.logger.error(err_msg)
-            raise ValueError(err_msg)
+        util.detect_list_duplicates(profile_config_files, 'profile config filenames', self.logger)
 
         profiles = {}
-        for profile in profile_configs:
-            profile_filename = profile.replace('.json', '')
-            profiles[profile_filename] = self._json_to_profile(os.path.join(profile_configs_path, profile))
+        for profile_filename in profile_config_files:
+            profile_filename_ = profile_filename.replace('.json', '')  # remove .json so we can use result dict later
+            profiles[profile_filename_] = self._json_to_profile(os.path.join(profile_configs_path, profile_filename))
 
-        diff_names = self._diff_profile_name_filename(profiles)
-        if diff_names:
-            err_msg = 'Profile name {0} must match containing filename {1}.json'.format(diff_names[0], diff_names[1])
-            self.logger.error(err_msg)
-            raise ValueError(err_msg)
+        self._detect_mismatch_profilename_filename(profiles)
 
         self.logger.info('Linted profile_configs files & transformed them into a dict of Profile objects')
 
@@ -78,9 +70,15 @@ class Linter:
         profile_config = util.load_json_config(profile_configs_path, 'profile', self.logger)
         return Profile(name=profile_config['profile_name'], metrics=profile_config['metrics'], logger=self.logger)
 
-    def _diff_profile_name_filename(self, profiles: Dict[str, Profile]) -> Optional[Tuple[str, str]]:
-        for filename, profile in profiles.items():
-            if filename != profile.name:
-                return (profile.name, filename)
+    def _detect_mismatch_profilename_filename(self, profiles: Dict[str, Profile]) -> List[Tuple[str, str]]:
+        diff_names = []
+        for profile_key_name, profile in profiles.items():
+            if profile_key_name != profile.name:
+                diff_names.append((profile.name, '{}.json'.format(profile_key_name)))
 
-        return None
+        if diff_names:
+            err_msg = 'There are mismatches between profile names & their containing filenames: {}'.format(diff_names)
+            self.logger.error(err_msg)
+            raise ValueError(err_msg)
+
+        return diff_names

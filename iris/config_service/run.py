@@ -11,7 +11,7 @@ logger = logging.getLogger('iris.config_service')
 
 
 def run_config_service(aws_creds_path: str, aws_profile: str, bucket_name: str, download_to_path: str,
-                       local_config_path: str, interval: int, dev_mode: bool, upload_from_path: str = None) -> None:
+                       local_config_path: str, interval: int, dev_mode: bool) -> None:
     # Run config service S3 puller to get the config files from iris bucket
     try:
         while True:
@@ -29,11 +29,21 @@ def run_config_service(aws_creds_path: str, aws_profile: str, bucket_name: str, 
             s3.download_bucket(download_to_path)
 
             # run linter to transform downloaded s3 configs into Python objects. Also lints the configs for errors
+            global_config_path = os.path.join(download_to_path, 'global_config.json')
+            metrics_config_path = os.path.join(download_to_path, 'metrics.json')
+            profile_configs_path = os.path.join(download_to_path, 'profiles')
+
             logger.info('Starting linter to transform the downloaded configs into GlobalConfig, Metric, & Profile objs')
             linter = Linter(logger)
-            global_config = linter.lint_global_config(os.path.join(download_to_path, 'global_config.json'))
-            metrics = linter.lint_metrics_config(global_config, os.path.join(download_to_path, 'metrics.json'))
-            profiles = linter.lint_profile_configs(os.path.join(download_to_path, 'profiles'))
+
+            logger.info('Linting Global Config file at {}'.format(global_config_path))
+            global_config = linter.lint_global_config(global_config_path)
+
+            logger.info('Linting Metrics Config file at {}'.format(metrics_config_path))
+            metrics = linter.lint_metrics_config(global_config, metrics_config_path)
+
+            logger.info('Linting Profile Configs file at {}'.format(profile_configs_path))
+            profiles = linter.lint_profile_configs(profile_configs_path)
 
             # run EC2Tags to retrieve the iris_tags of the host
             logger.info('Retrieving current ec2 host iris_tags')
@@ -47,8 +57,9 @@ def run_config_service(aws_creds_path: str, aws_profile: str, bucket_name: str, 
             ec2_iris_tags = ec2.get_iris_tags()
 
             # use iris_tags and downloaded s3 configs to generate the local_config object
-            iris_profile = ec2_iris_tags['ihr:iris:profile']
             logger.info('Matching retrieved iris_tags with the downloaded configs to generate the local_config obj')
+
+            iris_profile = ec2_iris_tags['ihr:iris:profile']
             if iris_profile not in profiles:
                 err_msg = 'The ihr:iris:profile tag on {} is not defined in any profile configs'.format(ec2.instance_id)
                 logger.error(err_msg)

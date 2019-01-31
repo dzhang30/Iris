@@ -56,15 +56,11 @@ def test_lint_profile_configs():
     assert profiles['profile_0'] == expected_profile_0
     assert profiles['profile_1'] == expected_profile_1
 
-    with pytest.raises(ValueError) as bad_names:
+    with pytest.raises(ValueError):
         linter.lint_profile_configs(test_incorrect_profiles_path)
-    assert str(bad_names.value) == 'Profile name incorrect_name must match containing filename profile_0.json'
 
-    with pytest.raises(OSError) as directory_doesnt_exist:
+    with pytest.raises(OSError):
         linter.lint_profile_configs(test_invalid_path)
-    expected_result = 'The profile_configs directory path {} does not exist or is incorrect. Check the path'.format(
-        test_invalid_path)
-    assert str(directory_doesnt_exist.value) == expected_result
 
 
 def test_json_to_metric():
@@ -106,14 +102,15 @@ def test_json_to_profile():
     assert linter._json_to_profile(test_profile_path) == expected_profile
 
 
-def test_diff_profile_name_filename():
+def test_detect_mismatch_profilename_filename():
     valid_profiles = {
         'valid_test0': Profile(name='valid_test0', metrics=['test_metric0'], logger=test_logger),
         'valid_test1': Profile(name='valid_test1', metrics=['test_metric1'], logger=test_logger)
     }
 
     linter = Linter(test_logger)
-    assert not linter._diff_profile_name_filename(valid_profiles)
+    assert linter._detect_mismatch_profilename_filename(valid_profiles) == []
 
     invalid_profiles = {'invalid_test0': Profile(name='valid_test0', metrics=['test_metric0'], logger=test_logger)}
-    assert linter._diff_profile_name_filename(invalid_profiles) == ('valid_test0', 'invalid_test0')
+    with pytest.raises(ValueError):
+        linter._detect_mismatch_profilename_filename(invalid_profiles)

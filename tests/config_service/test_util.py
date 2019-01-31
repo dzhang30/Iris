@@ -17,35 +17,33 @@ test_logger = logging.getLogger('iris.test')
 def test_check_file_exists():
     assert util.check_file_exists(test_metric_path, 'metrics', test_logger)
 
-    with pytest.raises(OSError) as file_doesnt_exist:
+    with pytest.raises(OSError):
         util.check_file_exists(test_invalid_file, 'test', test_logger)
-    expected_res = 'The test file path {} does not exist or is incorrect. Check the path'.format(test_invalid_file)
-    assert str(file_doesnt_exist.value) == expected_res
 
 
 def test_check_dir_exists():
     assert util.check_dir_exists(test_configs_dir, 'test_configs', test_logger)
 
-    with pytest.raises(OSError) as dir_doesnt_exist:
+    with pytest.raises(OSError):
         util.check_dir_exists(test_invalid_dir, 'test', test_logger)
-    expected_res = 'The test directory path {} does not exist or is incorrect. Check the path'.format(test_invalid_dir)
-    assert str(dir_doesnt_exist.value) == expected_res
 
 
-def test_find_list_duplicate():
+def test_detect_list_duplicates():
     duplicate_list = [
         'test0',
         'test1',
         'test1'
     ]
-    assert util.find_list_duplicate(duplicate_list) == 'test1'
+
+    with pytest.raises(ValueError):
+        util.detect_list_duplicates(duplicate_list, 'test items', test_logger)
 
     non_duplicate_list = [
         'test0',
         'test1',
         'test2'
     ]
-    assert util.find_list_duplicate(non_duplicate_list) is None
+    assert util.detect_list_duplicates(non_duplicate_list, 'test items', test_logger) == []
 
 
 def test_load_json_config():
@@ -61,10 +59,8 @@ def test_load_json_config():
 
     assert util.load_json_config(test_metric_path, 'test', test_logger) == expected_config
 
-    with pytest.raises(Exception) as bad_metrics:
+    with pytest.raises(Exception):
         util.load_json_config(dup_metrics_path, 'test', test_logger)
-    expected_output = 'The json file has duplicate keys: node_logged_in_users'
-    assert str(bad_metrics.value) == expected_output
 
 
 def test_detect_duplicate_json_keys():
@@ -72,11 +68,7 @@ def test_detect_duplicate_json_keys():
         'key0': 'val0',
         'key1': 'val1'
     }
-    assert util._detect_duplicate_json_keys(
-        [('key0', 'val0'), ('key1', 'val1')]
-    ) == expected_result
+    assert util._detect_duplicate_json_keys([('key0', 'val0'), ('key1', 'val1')]) == expected_result
 
-    with pytest.raises(ValueError) as duplicate_json_keys:
+    with pytest.raises(ValueError):
         util._detect_duplicate_json_keys([('duplicate_key', 'val0'), ('duplicate_key', 'val1')])
-    expected_output = 'The json file has duplicate keys: duplicate_key'
-    assert str(duplicate_json_keys.value) == expected_output

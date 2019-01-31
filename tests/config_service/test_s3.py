@@ -51,10 +51,8 @@ def test_s3_upload_object(mock_boto3):
     assert test_s3.upload_object(test_metrics_path) == 'metrics.json'
 
     invalid_path = 'tests/config_service/test_configs/invalid.py'
-    with pytest.raises(OSError) as file_doesnt_exist:
+    with pytest.raises(OSError):
         test_s3.upload_object(invalid_path)
-    expected_output = 'The upload_file file path {} does not exist or is incorrect. Check the path'.format(invalid_path)
-    assert str(file_doesnt_exist.value) == expected_output
 
 
 @patch('iris.config_service.aws.s3.boto3')
@@ -77,10 +75,8 @@ def test_s3_upload_directory(mock_boto3):
     assert set(test_s3.upload_directory(test_upload_path)) == expected_keys
 
     invalid_path = 'tests/config_service/test_configs/invalid/'
-    with pytest.raises(OSError) as directory_doesnt_exist:
+    with pytest.raises(OSError):
         test_s3.upload_directory(invalid_path)
-    expected_output = 'The upload directory path {} does not exist or is incorrect. Check the path'.format(invalid_path)
-    assert str(directory_doesnt_exist.value) == expected_output
 
 
 def test_s3_create_object_key():
