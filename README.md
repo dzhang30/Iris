@@ -6,10 +6,9 @@ https://docs.google.com/document/d/1xIBwOCU0p7NjxlX5_Y98w9nitYV5z7rnCT491lMl-QE/
 There is a need to capture metrics beyond the basics of what are provided by the Prometheus Node Exporter installed on all hosts. Additional metrics may be related to the application running on a specific host or hosts, specialized system checks beyond the scope of the node exporter, or other metrics that will replace Nagios or CheckMK.
 
 ## One-Time Setup
-These steps will install the pre-requisites for running iris on your local machine.
+Install `brew` and `python 3.7` (based on your setup, you might have to specify python version in the command line )
 
-* Install `brew` and `python 3.7` (based on your setup, you might have to specify python version in the command line )
-* Setup your virtualenv using `direnv`
+These steps will install the pre-requisites for running iris on your local machine.
 
 ```bash
 # Install Homebrew
@@ -71,13 +70,11 @@ tox
 ## Creating Iris executable via Pyinstaller
 We use `Pyinstaller` to transform Iris into an executable file that will run Iris as a daemon.
 Use this as the final step to local testing by making sure the binary builds and runs correctly.
-If you did not change the `iris_root_path = /opt/iris` in `iris.cfg`, then you will need to run 
+
+If you did not change the `iris_root_path = /opt/iris` in `iris.cfg`, then you will need to run the below commands with `sudo`. 
 
 
 ```bash
-# Download Pyinstaller
-pip install pyinstaller
-
 # Run Pyinstaller and set the path argument to include the virtual environment directory that holds all of Iris' dependencies
 sudo pyinstaller --paths=venv/lib/python3.7/site-packages/ --add-data=iris.cfg:. --clean main.py
 
