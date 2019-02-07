@@ -5,7 +5,7 @@ from logging import Logger
 from typing import Dict, List, Set, Tuple, Any
 
 
-def read_config_file(config_path: str, logger: Logger = None) -> ConfigParser:
+def read_config_file(config_path: str, logger: Logger = None) -> Dict:
     config = ConfigParser()
     file_read = config.read(config_path)
 
@@ -16,7 +16,7 @@ def read_config_file(config_path: str, logger: Logger = None) -> ConfigParser:
 
         raise OSError(err_msg)
 
-    return config
+    return dict(config)
 
 
 def check_file_exists(file_path: str, file_type: str, logger: Logger) -> bool:

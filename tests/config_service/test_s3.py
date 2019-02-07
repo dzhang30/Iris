@@ -22,12 +22,7 @@ def test_s3_download_bucket(mock_boto3):
         MockBucketObject('test_path/key2')
     ]
 
-    test_s3 = S3(
-        aws_creds_path=test_aws_creds_path,
-        bucket_name='test bucket',
-        aws_profile_name='test profile',
-        logger=test_logger
-    )
+    test_s3 = get_test_s3_instance()
     expected_files = ['test_path/key1', 'test_path/key2']
     test_download_dir_path = 'tests/config_service/test_download_directory'
     assert test_s3.download_bucket(test_download_dir_path) == expected_files
@@ -41,12 +36,7 @@ def test_s3_download_bucket(mock_boto3):
 def test_s3_upload_object(mock_boto3):
     mock_boto3.Session.return_value.resource.return_value.Bucket.return_value.upload_file.return_value = None
 
-    test_s3 = S3(
-        aws_creds_path=test_aws_creds_path,
-        bucket_name='test bucket',
-        aws_profile_name='test profile',
-        logger=test_logger
-    )
+    test_s3 = get_test_s3_instance()
     test_metrics_path = 'tests/config_service/test_configs/correct_configs/metrics.json'
     assert test_s3.upload_object(test_metrics_path) == 'metrics.json'
 
@@ -59,12 +49,7 @@ def test_s3_upload_object(mock_boto3):
 def test_s3_upload_directory(mock_boto3):
     mock_boto3.Session.return_value.resource.return_value.Bucket.return_value.upload_file.return_value = None
 
-    test_s3 = S3(
-        aws_creds_path=test_aws_creds_path,
-        bucket_name='test bucket',
-        aws_profile_name='test profile',
-        logger=test_logger
-    )
+    test_s3 = get_test_s3_instance()
     expected_keys = {
         'global_config.json',
         'metrics.json',
@@ -86,3 +71,13 @@ def test_s3_create_object_key():
         'metrics.json'
     )
     assert object_key == 'test_configs/metrics.json'
+
+
+def get_test_s3_instance():
+    return S3(
+        aws_creds_path=test_aws_creds_path,
+        region_name='test region',
+        bucket_environment='test profile',
+        bucket_name='test bucket',
+        logger=test_logger
+    )

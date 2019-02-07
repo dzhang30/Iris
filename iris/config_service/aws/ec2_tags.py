@@ -14,11 +14,12 @@ from iris.utils import util
 @dataclass
 class EC2Tags:
     aws_creds_path: str
+    region_name: str
+    ec2_metadata_url: str
     dev_mode: bool
+    dev_instance_id: str
     logger: Logger
-    region_name: str = 'us-east-1'
 
-    ec2_metadata_url = 'http://169.254.169.254/latest/meta-data/'
 
     def __post_init__(self) -> None:
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
@@ -26,7 +27,7 @@ class EC2Tags:
         os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.aws_creds_path
 
         if self.dev_mode:
-            self.instance_id = 'i-379f14b7'  # local dev will default to using stg-tvclient101.ihrcloud.net
+            self.instance_id = self.dev_instance_id  # local dev mode will use the instance id specified in iris.cfg
         else:
             self.instance_id = self._request_instance_id()
 

@@ -12,17 +12,17 @@ from iris.utils import util
 @dataclass
 class S3:
     aws_creds_path: str
-    aws_profile_name: str
+    region_name: str
+    bucket_environment: str
     bucket_name: str
     logger: Logger
-    region_name: str = 'us-east-1'
 
     def __post_init__(self) -> None:
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
 
         os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.aws_creds_path
 
-        s3 = boto3.Session(profile_name=self.aws_profile_name, region_name=self.region_name).resource('s3')
+        s3 = boto3.Session(profile_name=self.bucket_environment, region_name=self.region_name).resource('s3')
         self._bucket = s3.Bucket(self.bucket_name)
 
     def download_bucket(self, download_path: str) -> List[str]:
