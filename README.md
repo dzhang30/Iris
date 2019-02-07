@@ -48,17 +48,17 @@ python setup.py install
 
 ## Local Development and Testing
 To run and test the Iris code locally, open `iris.cfg` and set `iris_mode = dev`. This will direct all calls to the boto3 EC2 API to point at our dev test host
-specified by the `ec2_dev_instance_id` field in `iris.cfg` (default: `stg-tvclient101.ihrcloud.net, i-379f14b7`]. This logic is included to make 
-local dev easy/seamless since our local dev machines are not part of our EC2 hosts.
+specified by the `ec2_dev_instance_id` field in `iris.cfg` (default: `stg-tvclient101.ihrcloud.net, i-379f14b7`). This logic is included to make 
+local dev easy/seamless since our dev machines are not part of the EC2 environment.
 
 By default, Iris will download and create all dependent files to the path defined by `iris_root_path` in `iris.cfg`. The default path is `/opt/iris`, but you can
-change that to any other path for local development.  
+change that to any other path for development.  
 
-After you have completed local development and testing, make sure that these requirements are fulfilled:
+Make sure that these requirements are fulfilled for testing:
 * `tox` runs successfully (unit testing, linting, type checking, coverage)
 * `pyinstaller` binary builds and runs successfully
 
-Please make sure to go back in `iris.cfg` and set `iris_mode = prod` and `iris_root_path = /opt/iris` before committing and deploying
+Please go back in `iris.cfg` and set `iris_mode = prod` and `iris_root_path = /opt/iris` before committing and deploying
 
 ## Unit Testing, Linting, Type Checking and Coverage
 We use `Tox` to automate and run our testing environment. This includes running `coverage`, `pytest` via setup.py test, `mypy` for type checking, and `flake8` for linting  
