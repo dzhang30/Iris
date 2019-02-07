@@ -20,7 +20,6 @@ class EC2Tags:
     dev_instance_id: str
     logger: Logger
 
-
     def __post_init__(self) -> None:
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
 

@@ -38,11 +38,6 @@ requires = [
     'urllib3==1.23',
 ]
 
-test_requirements = [
-    'mock',
-    'pytest'
-]
-
 setup(
     package_dir={'': 'iris'},
     install_requires=requires,
