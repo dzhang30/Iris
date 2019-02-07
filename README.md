@@ -47,18 +47,76 @@ python setup.py install
 ```
 
 ## Local Development and Testing
-To run and test the Iris code locally, open `iris.cfg` and set `iris_mode = dev`. This will direct all calls to the boto3 EC2 API to point at our dev test host
-specified by the `ec2_dev_instance_id` field in `iris.cfg` (default: `stg-tvclient101.ihrcloud.net, i-379f14b7`). This logic is included to make 
-local dev easy/seamless since our dev machines are not part of the EC2 environment.
+To run and test the Iris code locally:
+* open `iris.cfg` 
+    * set `iris_mode = dev`
+    * set `ec2_dev_instance_id` field to the instance id of the ec2 host you want to test on 
+        * this will direct all calls to the boto3 EC2 API to point at this specific host
+* create test metrics that you want to run, or you can just use what's already in `metrics.json`
+    * add your test metric to `metrics.json` in the following format
+    ```
+    # metrics.json
+    {
+      "node_logged_in_users": {
+        "help": "The number of users currently logged into the node",
+        "metric_type": "gauge",
+        "execution_frequency": 30,
+        "bash_command": "who | wc -l",
+        "export_method": "textfile"
+      },
+      "node_running_processes": {
+        "help": "The number of running processes on the node",
+        "metric_type": "gauge",
+        "execution_frequency": 20,
+        "bash_command": "ps ax | wc -l",
+        "export_method": "textfile"
+      },
+      ...
+      ...
+      "test_metric_1" : {
+        "help": "test metric 1",
+        "metric_type": "gauge",
+        "execution_frequency": 27,
+        "bash_command": "test command 1",
+        "export_method": "textfile"
+      },
+      "test_metric_2" : {
+        "help": "test metric 2",
+        "metric_type": "gauge",
+        "execution_frequency": 25,
+        "bash_command": "test command 2",
+        "export_method": "textfile"
+      }
+    }
+    ```
+* create a profile config file (if it doesn't already exist) for the test instance specified by `ec2_dev_instance_id` field in `iris.cfg`. 
+    * name the file after the host name (if `host_name = stg-tvclient101.ihrcloud.net`, then name the file `tvclient.json`).
+    * profile config file format:
+    ```
+    # test_instance_name.json
+    {
+        "profile_name": "test_instance_name",
+        "metrics": [
+            "node_logged_in_users",
+            "node_running_processes",
+            "test_metric_1",
+            "test_metric_2",
+        ]
+    }
+    ```
+* create the iris tags for the ec2 instance you are testing on
+    * add `ihr:iris:profile` tag and set it to the profile config name without the `.json`
+        * e.g. `ihr:iris:enabled = tvclient` for the `stg-tvclient101.ihrcloud.net` host
+    * add `ihr:iris:enabled = True`
+
 
 By default, Iris will download and create all dependent files to the path defined by `iris_root_path` in `iris.cfg`. The default path is `/opt/iris`, but you can
 change that to any other path for development.  
 
-Make sure that these requirements are fulfilled for testing:
+Make sure that these requirements are fulfilled to complete testing:
 * `tox` runs successfully (unit testing, linting, type checking, coverage)
-* `pyinstaller` binary builds and runs successfully
-
-Please go back in `iris.cfg` and set `iris_mode = prod` and `iris_root_path = /opt/iris` before committing and deploying
+* `pyinstaller` binary builds and runs successfully (check pyinstaller section)
+* go back in `iris.cfg` and set `iris_mode = prod` and `iris_root_path = /opt/iris` before committing and deploying
 
 ## Unit Testing, Linting, Type Checking and Coverage
 We use `Tox` to automate and run our testing environment. This includes running `coverage`, `pytest` via setup.py test, `mypy` for type checking, and `flake8` for linting  
