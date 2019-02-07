@@ -108,7 +108,7 @@ def run_iris(logger: logging.Logger, iris_main_settings: Dict, config_service_se
                     logger.error(err_msg.format(pid, name, exit_code))
                     child_process['up'] = 0
 
-                prom_format = 'iris_{}_up{{host_name="{}",environment="{}",iris_profile="{}"}} {}'
+                prom_format = 'iris_{}_up{{host_name="{}",environment="{}",iris_profile="{}"}} {}\n'
                 prom_file_path = os.path.join(prom_dir_path, 'iris_{}_up.prom'.format(name))
                 with open(prom_file_path, 'w') as prom_file:
                     prom_string = prom_format.format(name, host_name, environment, iris_profile, child_process['up'])

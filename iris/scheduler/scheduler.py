@@ -37,7 +37,7 @@ class MetricResult:
         return template_str.format(self.metric.name, self.pid, self.return_code, self.shell_output)
 
     def to_prom_format(self) -> str:
-        prom_format = '{}{{execution_frequency="{}",execution_timeout="{}",return_code="{}",timeout="{}"}} {}'
+        prom_format = '{}{{execution_frequency="{}",execution_timeout="{}",return_code="{}",timeout="{}"}} {}\n'
         return prom_format.format(self.metric.name, self.metric.execution_frequency, self.metric.execution_timeout,
                                   self.return_code, self.timeout, self.prom_result_value)
 
