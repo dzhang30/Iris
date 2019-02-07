@@ -1,4 +1,0 @@
-{
-  "profile_name": "incorrect_name",
-  "metrics": ["node_logged_in_users", "node_open_file_descriptors"]
-}

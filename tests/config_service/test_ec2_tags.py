@@ -31,7 +31,8 @@ def test_successful_get_tags(mock_requests, mock_boto3):
         'name': 'test_host'
     }
 
-    assert EC2Tags(test_aws_creds_path, False, test_logger).get_iris_tags() == expected_result
+    ec2_tags = get_test_ec2_tags_instance(test_aws_creds_path)
+    assert ec2_tags.get_iris_tags() == expected_result
 
 
 @patch('iris.config_service.aws.ec2_tags.boto3')
@@ -50,8 +51,9 @@ def test_get_tags_failure(mock_requests, mock_boto3):
     mock_requests.get.return_value.text = 'i-test'
     mock_boto3.Session.return_value.resource.return_value.Instance.side_effect = test_err
 
+    ec2_tags = get_test_ec2_tags_instance(test_aws_creds_path)
     with pytest.raises(ClientError):
-        EC2Tags(test_aws_creds_path, False, test_logger).get_iris_tags()
+        ec2_tags.get_iris_tags()
 
 
 @patch('iris.config_service.aws.ec2_tags.requests')
@@ -59,7 +61,7 @@ def test_successful_get_aws_profiles(mock_requests):
     mock_requests.get.return_value.text = 'i-test'
     expected_aws_creds_sections = ['test0', 'test1']
 
-    ec2_tags = EC2Tags(test_aws_creds_path, False, test_logger)
+    ec2_tags = get_test_ec2_tags_instance(test_aws_creds_path)
     result_sections = ec2_tags._get_aws_profiles()
 
     assert result_sections == expected_aws_creds_sections
@@ -70,18 +72,31 @@ def test_get_aws_profiles_failure(mock_requests):
     mock_requests.get.return_value.text = 'i-test'
 
     with pytest.raises(OSError):
-        EC2Tags(test_incorrect_path, False, test_logger)._get_aws_profiles()
+        get_test_ec2_tags_instance(test_incorrect_path)._get_aws_profiles()
 
 
 @patch('iris.config_service.aws.ec2_tags.requests')
 def test_successful_request_instance_id(mock_requests):
     mock_requests.get.return_value.text = 'test successful'
-    assert EC2Tags(test_aws_creds_path, False, test_logger)._request_instance_id() == 'test successful'
+    ec2_tags = get_test_ec2_tags_instance(test_aws_creds_path)
+    assert ec2_tags._request_instance_id() == 'test successful'
 
 
 @patch('iris.config_service.aws.ec2_tags.requests.get')
 def test_request_instance_id_failure(mock_requests):
     mock_requests.side_effect = ConnectionError
 
+    ec2_tags = get_test_ec2_tags_instance(test_aws_creds_path)
     with pytest.raises(ConnectionError):
-        EC2Tags(test_aws_creds_path, False, test_logger)._request_instance_id()
+        ec2_tags._request_instance_id()
+
+
+def get_test_ec2_tags_instance(path: str):
+    return EC2Tags(
+        aws_creds_path=path,
+        region_name='test region',
+        ec2_metadata_url='test url',
+        dev_mode=True,
+        dev_instance_id='i-000',
+        logger=test_logger
+    )

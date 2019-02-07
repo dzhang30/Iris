@@ -1,22 +1,38 @@
+import os
+import sys
+from typing import Dict
+
 import daemon
 
 from iris.run import run_iris
 from iris.utils import main_helpers
+from iris.utils.util import read_config_file
 
-# pyinstaller doesnt allow you to set commandline args before or after making the executable so we have to hard code
-# this option. It can either be set to 'dev' for local testing or 'prod' for deploying and running on an ec2 host
-IRIS_MODE = 'prod'
-
-IRIS_ROOT_PATH = '/opt/iris'  # this is where iris will download and write all of its associated files
+CONFIG_NAME = 'iris.cfg'
 
 
-def main() -> None:
-    logger = main_helpers.setup_iris_main_logger(IRIS_ROOT_PATH)  # logging for main iris process & its child processes
-    iris_mode = main_helpers.check_iris_mode(IRIS_MODE, logger)  # make sure the IRIS_MODE variable is set correctly
+def main(iris_config: Dict) -> None:
+    iris_root_path = iris_config['main_settings']['iris_root_path']
+    iris_mode = iris_config['main_settings']['iris_mode']
 
-    run_iris(logger, iris_mode, IRIS_ROOT_PATH)
+    iris_main_logger = main_helpers.setup_iris_logging(iris_root_path=iris_root_path)
+    main_helpers.check_iris_mode(iris_mode=iris_mode, logger=iris_main_logger)
+
+    run_iris(
+        logger=iris_main_logger,
+        iris_main_settings=iris_config['main_settings'],
+        config_service_settings=iris_config['config_service_settings'],
+        scheduler_settings=iris_config['scheduler_settings']
+    )
 
 
 if __name__ == '__main__':
+    if getattr(sys, 'frozen', False):
+        iris_config_path = os.path.join(sys._MEIPASS, CONFIG_NAME)  # type: ignore
+    else:
+        iris_config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), CONFIG_NAME)
+
+    iris_config = read_config_file(iris_config_path)
+
     with daemon.DaemonContext():
-        main()
+        main(iris_config)

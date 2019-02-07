@@ -10,28 +10,30 @@ from iris.config_service.config_lint.linter import Linter
 logger = logging.getLogger('iris.config_service')
 
 
-def run_config_service(aws_creds_path: str, aws_profile: str, bucket_name: str, download_to_path: str,
-                       local_config_path: str, interval: int, dev_mode: bool) -> None:
+def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: str, s3_bucket_name: str,
+                       s3_download_to_path: str, ec2_region_name: str, ec2_dev_instance_id: str, ec2_metadata_url: str,
+                       dev_mode: bool, local_config_path: str, run_frequency: float) -> None:
     # Run config service S3 puller to get the config files from iris bucket
     try:
         while True:
             logger.info('Starting Config_Service')
 
-            logger.info('Downloading bucket content from s3: {} to directory: {}'.format(bucket_name, download_to_path))
+            logger.info('Downloading content from s3 bucket: {} to dir: {}'.format(s3_bucket_name, s3_download_to_path))
 
             s3 = S3(
                 aws_creds_path=aws_creds_path,
-                bucket_name=bucket_name,
-                aws_profile_name=aws_profile,
+                region_name=s3_region_name,
+                bucket_environment=s3_bucket_env,
+                bucket_name=s3_bucket_name,
                 logger=logger
             )
 
-            s3.download_bucket(download_to_path)
+            s3.download_bucket(s3_download_to_path)
 
             # run linter to transform downloaded s3 configs into Python objects. Also lints the configs for errors
-            global_config_path = os.path.join(download_to_path, 'global_config.json')
-            metrics_config_path = os.path.join(download_to_path, 'metrics.json')
-            profile_configs_path = os.path.join(download_to_path, 'profiles')
+            global_config_path = os.path.join(s3_download_to_path, 'global_config.json')
+            metrics_config_path = os.path.join(s3_download_to_path, 'metrics.json')
+            profile_configs_path = os.path.join(s3_download_to_path, 'profiles')
 
             logger.info('Starting linter to transform the downloaded configs into GlobalConfig, Metric, & Profile objs')
             linter = Linter(logger)
@@ -50,7 +52,10 @@ def run_config_service(aws_creds_path: str, aws_profile: str, bucket_name: str, 
 
             ec2 = EC2Tags(
                 aws_creds_path=aws_creds_path,
+                region_name=ec2_region_name,
+                ec2_metadata_url=ec2_metadata_url,
                 dev_mode=dev_mode,
+                dev_instance_id=ec2_dev_instance_id,
                 logger=logger
             )
 
@@ -83,7 +88,7 @@ def run_config_service(aws_creds_path: str, aws_profile: str, bucket_name: str, 
 
             logger.info('Finished Config_Service\n')
 
-            time.sleep(interval)
+            time.sleep(run_frequency)
 
     # will log twice for defined err logs in iris code, but will catch & log other unlogged errs in code (3rd party err)
     except Exception as e:

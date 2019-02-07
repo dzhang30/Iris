@@ -8,7 +8,7 @@ from iris.scheduler.scheduler import Scheduler  # noqa: E402
 logger = logging.getLogger('iris.scheduler')
 
 
-def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path: str, interval: int) -> None:
+def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path: str, run_frequency: float) -> None:
     try:
         while True:
             logger.info('Starting Scheduler')
@@ -44,7 +44,7 @@ def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path
 
             logger.info('Finished Scheduler\n')
 
-            time.sleep(interval)
+            time.sleep(run_frequency)
 
     # will log twice for defined err logs in iris code, but will catch & log other unlogged errs in code (3rd party err)
     except Exception as e:

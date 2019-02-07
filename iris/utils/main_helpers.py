@@ -2,13 +2,12 @@ import logging
 import os
 
 
-def setup_iris_main_logger(iris_root_path: str) -> logging.Logger:
+def setup_iris_logging(iris_root_path: str) -> logging.Logger:
     logger = logging.getLogger('iris')
     logger.setLevel(logging.DEBUG)
 
     iris_log_path = os.path.join(iris_root_path, 'logs')
-    if not os.path.exists(iris_log_path):
-        os.makedirs(iris_log_path, exist_ok=True)
+    os.makedirs(iris_log_path, exist_ok=True)
 
     format = logging.Formatter(
         fmt='%(asctime)s %(name)-12s %(levelname)s %(process)-8d %(message)s',

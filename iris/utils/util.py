@@ -1,7 +1,22 @@
 import json
 import os
+from configparser import ConfigParser
 from logging import Logger
 from typing import Dict, List, Set, Tuple, Any
+
+
+def read_config_file(config_path: str, logger: Logger = None) -> Dict:
+    config = ConfigParser()
+    file_read = config.read(config_path)
+
+    if not file_read:
+        err_msg = 'Could not open/read the config file: {0}'.format(config_path)
+        if logger:
+            logger.error(err_msg)
+
+        raise OSError(err_msg)
+
+    return dict(config)
 
 
 def check_file_exists(file_path: str, file_type: str, logger: Logger) -> bool:
@@ -62,8 +77,3 @@ def _detect_duplicate_json_keys(pairs: List[Tuple]) -> Dict[str, Any]:
         config_json[key] = val
 
     return config_json
-
-
-def read_config_file(config_path: str) -> None:
-    # TODO: read config file in ini/cfg format
-    pass
