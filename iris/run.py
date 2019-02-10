@@ -2,23 +2,22 @@ import logging
 import multiprocessing
 import os
 import time
-from typing import Dict
+from configparser import ConfigParser
 
 from iris.config_service.aws.ec2_tags import EC2Tags
 from iris.config_service.run import run_config_service  # noqa: E402
 from iris.scheduler.run import run_scheduler  # noqa: E402
 
 
-def run_iris(logger: logging.Logger, iris_main_settings: Dict, config_service_settings: Dict,
-             scheduler_settings: Dict) -> None:
+def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
     try:
-        iris_mode = iris_main_settings['iris_mode']
+        iris_main_settings = iris_config['main_settings']
+
         iris_root_path = iris_main_settings['iris_root_path']
-        iris_monitor_frequency = float(iris_main_settings['iris_monitor_frequency'])
+        iris_monitor_frequency = iris_main_settings.getfloat('iris_monitor_frequency')
+        dev_mode = iris_main_settings.getboolean('dev_mode')
 
-        dev_mode = True if iris_mode == 'dev' else False  # run iris in dev env for testing or prod for deployment
-
-        logger.info('Starting IRIS in {} mode\n'.format(iris_mode))
+        logger.info('Starting IRIS in {} mode\n'.format('DEV' if dev_mode else 'PROD'))
 
         # set path variables
         aws_credentials_path = os.path.join(iris_root_path, 'aws_credentials')
@@ -34,7 +33,8 @@ def run_iris(logger: logging.Logger, iris_main_settings: Dict, config_service_se
         # run config_service process
         logger.info('Started the Config_Service child process')
 
-        config_service_params = {
+        config_service_settings = iris_config['config_service_settings']
+        run_config_service_params = {
             'aws_creds_path': aws_credentials_path,
             's3_region_name': config_service_settings['s3_region_name'],
             's3_bucket_env': config_service_settings['s3_bucket_env'],
@@ -44,14 +44,13 @@ def run_iris(logger: logging.Logger, iris_main_settings: Dict, config_service_se
             'ec2_dev_instance_id': config_service_settings['ec2_dev_instance_id'],
             'ec2_metadata_url': config_service_settings['ec2_metadata_url'],
             'local_config_path': local_config_file_path,
-            'run_frequency': float(config_service_settings['run_frequency']),
+            'run_frequency': config_service_settings.getfloat('run_frequency'),
             'dev_mode': dev_mode
         }
-
         config_service_process = multiprocessing.Process(
             target=run_config_service,
             name='config_service',
-            kwargs=config_service_params
+            kwargs=run_config_service_params
         )
 
         config_service_process.start()
@@ -59,17 +58,17 @@ def run_iris(logger: logging.Logger, iris_main_settings: Dict, config_service_se
         # run scheduler process
         logger.info('Started the Scheduler child process')
 
-        scheduler_params = {
+        scheduler_settings = iris_config['scheduler_settings']
+        run_scheduler_params = {
             'global_config_path': global_config_file_path,
             'local_config_path': local_config_file_path,
             'prom_dir_path': prom_dir_path,
-            'run_frequency': float(scheduler_settings['run_frequency'])
+            'run_frequency': scheduler_settings.getfloat('run_frequency')
         }
-
         scheduler_process = multiprocessing.Process(
             target=run_scheduler,
             name='scheduler',
-            kwargs=scheduler_params
+            kwargs=run_scheduler_params
         )
 
         scheduler_process.start()
@@ -81,7 +80,7 @@ def run_iris(logger: logging.Logger, iris_main_settings: Dict, config_service_se
 
         while True:
             child_process_names = [child['process'].name for child in child_processes]  # type: ignore
-            logger.info('Monitoring {} child services: {}'.format(iris_mode, child_process_names))
+            logger.info('Monitoring child services: {}'.format(child_process_names))
 
             ec2 = EC2Tags(
                 aws_creds_path=aws_credentials_path,

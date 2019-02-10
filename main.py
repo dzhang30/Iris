@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Dict
+from configparser import ConfigParser
 
 import daemon
 
@@ -11,19 +11,14 @@ from iris.utils.util import read_config_file
 CONFIG_NAME = 'iris.cfg'
 
 
-def main(iris_config: Dict) -> None:
+def main(iris_config: ConfigParser) -> None:
     iris_root_path = iris_config['main_settings']['iris_root_path']
-    iris_mode = iris_config['main_settings']['iris_mode']
 
     iris_main_logger = main_helpers.setup_iris_logging(iris_root_path=iris_root_path)
-    main_helpers.check_iris_mode(iris_mode=iris_mode, logger=iris_main_logger)
 
-    run_iris(
-        logger=iris_main_logger,
-        iris_main_settings=iris_config['main_settings'],
-        config_service_settings=iris_config['config_service_settings'],
-        scheduler_settings=iris_config['scheduler_settings']
-    )
+    main_helpers.check_iris_test_settings(iris_config, iris_main_logger)
+
+    run_iris(logger=iris_main_logger, iris_config=iris_config)
 
 
 if __name__ == '__main__':

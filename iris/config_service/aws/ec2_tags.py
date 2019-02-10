@@ -1,5 +1,4 @@
 import os
-from configparser import ConfigParser
 from dataclasses import dataclass
 from logging import Logger
 from typing import List, Dict
@@ -22,7 +21,6 @@ class EC2Tags:
 
     def __post_init__(self) -> None:
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
-
         os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.aws_creds_path
 
         if self.dev_mode:
@@ -34,8 +32,11 @@ class EC2Tags:
         instance_tags: List = []
         ec2_error = ClientError({}, '')
 
-        profiles = self._get_aws_profiles()
-        for profile in profiles:  # we must loop through each profile as a host won't know what profile it's in
+        aws_creds_config = util.read_config_file(self.aws_creds_path, self.logger)
+        profiles = aws_creds_config.sections()
+
+        # try each profile name in the aws_credentials file as the host won't know it's own aws profile
+        for profile in profiles:
             ec2 = boto3.Session(profile_name=profile, region_name=self.region_name).resource('ec2')
             try:
                 instance_tags = ec2.Instance(self.instance_id).tags
@@ -56,16 +57,6 @@ class EC2Tags:
         self.logger.info('Retrieved iris_tags: {}'.format(iris_tags))
 
         return iris_tags
-
-    def _get_aws_profiles(self) -> List[str]:
-        config = ConfigParser()
-        file_read = config.read(self.aws_creds_path)
-        if not file_read:
-            err_msg = 'Could not open/read the aws credentials file: {0}'.format(self.aws_creds_path)
-            self.logger.error(err_msg)
-            raise OSError(err_msg)
-
-        return config.sections()
 
     def _extract_iris_tags(self, instance_tags: List) -> Dict[str, str]:
         iris_tags = {}

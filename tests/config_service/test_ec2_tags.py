@@ -57,25 +57,6 @@ def test_get_tags_failure(mock_requests, mock_boto3):
 
 
 @patch('iris.config_service.aws.ec2_tags.requests')
-def test_successful_get_aws_profiles(mock_requests):
-    mock_requests.get.return_value.text = 'i-test'
-    expected_aws_creds_sections = ['test0', 'test1']
-
-    ec2_tags = get_test_ec2_tags_instance(test_aws_creds_path)
-    result_sections = ec2_tags._get_aws_profiles()
-
-    assert result_sections == expected_aws_creds_sections
-
-
-@patch('iris.config_service.aws.ec2_tags.requests')
-def test_get_aws_profiles_failure(mock_requests):
-    mock_requests.get.return_value.text = 'i-test'
-
-    with pytest.raises(OSError):
-        get_test_ec2_tags_instance(test_incorrect_path)._get_aws_profiles()
-
-
-@patch('iris.config_service.aws.ec2_tags.requests')
 def test_successful_request_instance_id(mock_requests):
     mock_requests.get.return_value.text = 'test successful'
     ec2_tags = get_test_ec2_tags_instance(test_aws_creds_path)
