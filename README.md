@@ -47,12 +47,19 @@ python setup.py install
 ```
 
 ## Local Development and Testing
+
+By default, Iris will download and create all dependent files to the `/opt/iris` directory specified by the `iris_root_path` field in `iris.cfg` 
+
 To run and test the Iris code locally:
 * open `iris.cfg` 
-    * set `iris_mode = dev`
+    * set `dev_mode = true`
     * set `ec2_dev_instance_id` field to the instance id of the ec2 host you want to test on 
-        * this will direct all calls to the boto3 EC2 API to point at this specific host
-* create test metrics that you want to run, or you can just use what's already in `metrics.json`
+        * this will direct boto3 EC2 API calls to point at the specified host
+* run the `scripts/download_configs.py` file to pull down the current configs for iris. They will be located in `/opt/iris/downloads`
+    ```
+    sudo python scripts/download_configs.py
+    ```
+* create new test metrics or edit existing ones in  `/opt/iris/downloads/metrics.json`
     * add your test metric to `metrics.json` in the following format
     ```
     # metrics.json
@@ -89,7 +96,7 @@ To run and test the Iris code locally:
       }
     }
     ```
-* create a profile config file (if it doesn't already exist) for the test instance specified by `ec2_dev_instance_id` field in `iris.cfg`. 
+* create a new profile config or edit an existing one in `/opt/iris/downloads/profiles/` for the test instance specified by the `ec2_dev_instance_id` field in `iris.cfg`
     * name the file after the host name (if `host_name = stg-tvclient101.ihrcloud.net`, then name the file `tvclient.json`).
     * profile config file format:
     ```
@@ -105,13 +112,10 @@ To run and test the Iris code locally:
     }
     ```
 * create the iris tags for the ec2 instance you are testing on
-    * add `ihr:iris:profile` tag and set it to the profile config name without the `.json`
+    * add `ihr:iris:profile` tag and set it to the profile config name without the `.json` suffix
         * e.g. `ihr:iris:enabled = tvclient` for the `stg-tvclient101.ihrcloud.net` host
     * add `ihr:iris:enabled = True`
-
-
-By default, Iris will download and create all dependent files to the path defined by `iris_root_path` in `iris.cfg`. The default path is `/opt/iris`, but you can
-change that to any other path for development.  
+  
 
 Make sure that these requirements are fulfilled to complete testing:
 * `tox` runs successfully (unit testing, linting, type checking, coverage)

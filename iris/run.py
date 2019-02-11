@@ -86,8 +86,8 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
                 aws_creds_path=aws_credentials_path,
                 region_name=config_service_settings['ec2_region_name'],
                 ec2_metadata_url=config_service_settings['ec2_metadata_url'],
-                dev_mode=dev_mode,
                 dev_instance_id=config_service_settings['ec2_dev_instance_id'],
+                dev_mode=dev_mode,
                 logger=logger
             )
 

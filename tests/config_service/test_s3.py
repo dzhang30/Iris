@@ -79,5 +79,6 @@ def get_test_s3_instance():
         region_name='test region',
         bucket_environment='test profile',
         bucket_name='test bucket',
+        dev_mode=False,
         logger=test_logger
     )

@@ -15,6 +15,7 @@ class S3:
     region_name: str
     bucket_environment: str
     bucket_name: str
+    dev_mode: bool
     logger: Logger
 
     def __post_init__(self) -> None:
@@ -26,8 +27,13 @@ class S3:
         self._bucket = s3.Bucket(self.bucket_name)
 
     def download_bucket(self, download_path: str) -> List[str]:
-        if os.path.isdir(download_path):  # clear the old download directory on each run
-            rmtree(download_path)
+        if os.path.isdir(download_path):
+            if not self.dev_mode:  # clear the previous download directory on each prod run
+                self.logger.info('Cleared the previous content in the downloads dir before pulling down new data')
+                rmtree(download_path)
+            else:  # do not clear the downloads directory in dev mode so you can run new test metrics and profiles
+                msg = 'Dev_Mode run: not clearing the downloads dir {} so you can locally test new metrics/profiles'
+                self.logger.info(msg.format(download_path))
 
         downloaded_files = []
         for object_ in self._bucket.objects.all():

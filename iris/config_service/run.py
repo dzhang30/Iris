@@ -25,6 +25,7 @@ def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: 
                 region_name=s3_region_name,
                 bucket_environment=s3_bucket_env,
                 bucket_name=s3_bucket_name,
+                dev_mode=dev_mode,
                 logger=logger
             )
 
@@ -54,8 +55,8 @@ def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: 
                 aws_creds_path=aws_creds_path,
                 region_name=ec2_region_name,
                 ec2_metadata_url=ec2_metadata_url,
-                dev_mode=dev_mode,
                 dev_instance_id=ec2_dev_instance_id,
+                dev_mode=dev_mode,
                 logger=logger
             )
 

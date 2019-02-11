@@ -15,12 +15,13 @@ class EC2Tags:
     aws_creds_path: str
     region_name: str
     ec2_metadata_url: str
-    dev_mode: bool
     dev_instance_id: str
+    dev_mode: bool
     logger: Logger
 
     def __post_init__(self) -> None:
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
+
         os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.aws_creds_path
 
         if self.dev_mode:
