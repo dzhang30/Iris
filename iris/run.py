@@ -8,12 +8,19 @@ from iris.config_service.run import run_config_service  # noqa: E402
 from iris.scheduler.run import run_scheduler  # noqa: E402
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter  # noqa: E402
 
+# Version constants - these will be updated at build time.
+IRIS_VERSION = 'n/a'
+IRIS_REVISION = 'n/a'
+IRIS_PYTHON_VERSION = 'n/a'
+IRIS_BUILD_DATE = 'n/a'
+
 
 def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
     try:
         iris_main_settings = iris_config['main_settings']
 
         iris_root_path = iris_main_settings['iris_root_path']
+        textfile_collector_path = iris_main_settings['textfile_collector_path']
         iris_monitor_frequency = iris_main_settings.getfloat('iris_monitor_frequency')
         dev_mode = iris_main_settings.getboolean('dev_mode')
 
@@ -28,7 +35,32 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
 
         # won't make dirs if they already exist
         os.makedirs(s3_download_to_path, exist_ok=True)
-        os.makedirs(prom_dir_path, exist_ok=True)
+        os.makedirs(textfile_collector_path, exist_ok=True)
+
+        if not os.path.isdir(prom_dir_path):
+            logger.info('Creating symlink from {} to {}'.format(textfile_collector_path, prom_dir_path))
+            os.symlink(textfile_collector_path, prom_dir_path)
+
+        # Expose Iris version metadata'
+        logger.info('Expose Iris version metadata via prom file')
+        iris_version_settings = {
+            'iris_version': IRIS_VERSION,
+            'iris_revision': IRIS_REVISION,
+            'iris_python_version': IRIS_PYTHON_VERSION,
+            'iris_build_date': IRIS_BUILD_DATE,
+        }
+
+        prom_builder = PromStrBuilder(
+            metric_name='iris_build_info',
+            metric_result=1,
+            help_str='This gives us iris build metadata',
+            type_str='gauge',
+            labels=iris_version_settings
+        )
+        prom_string = prom_builder.create_prom_string()
+        prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format('iris_build_info'))
+        prom_writer = PromFileWriter(logger=logger)
+        prom_writer.write_prom_file(False, prom_file_path, prom_string)
 
         # run config_service process
         logger.info('Starting the Config_Service child process')
@@ -92,7 +124,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
                 prom_builder = PromStrBuilder(
                     metric_name=metric_name,
                     metric_result=1 if child_process.is_alive() else 0,
-                    help_str='Check if the {} process is still up.'.format(process_name),
+                    help_str='Check if the {} process is still up'.format(process_name),
                     type_str='gauge'
                 )
 
