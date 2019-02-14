@@ -41,6 +41,27 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             logger.info('Creating symlink from {} to {}'.format(textfile_collector_path, prom_dir_path))
             os.symlink(textfile_collector_path, prom_dir_path)
 
+        # Expose Iris version metadata'
+        logger.info('Expose Iris version metadata via prom file')
+        iris_version_settings = {
+            'iris_version': IRIS_VERSION,
+            'iris_revision': IRIS_REVISION,
+            'iris_python_version': IRIS_PYTHON_VERSION,
+            'iris_build_date': IRIS_BUILD_DATE,
+        }
+
+        prom_builder = PromStrBuilder(
+            metric_name='iris_build_info',
+            metric_result=1,
+            help_str='This gives us iris build metadata',
+            type_str='gauge',
+            labels=iris_version_settings
+        )
+        prom_string = prom_builder.create_prom_string()
+        prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format('iris_build_info'))
+        prom_writer = PromFileWriter(logger=logger)
+        prom_writer.write_prom_file(False, prom_file_path, prom_string)
+
         # run config_service process
         logger.info('Starting the Config_Service child process')
 
@@ -83,26 +104,6 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         )
         scheduler_process.daemon = True  # cleanup scheduler child process when main process exits
         scheduler_process.start()
-
-        # Expose Iris version metadata'
-        iris_version_settings = {
-            'iris_version': IRIS_VERSION,
-            'iris_revision': IRIS_REVISION,
-            'iris_python_version': IRIS_PYTHON_VERSION,
-            'iris_build_date': IRIS_BUILD_DATE,
-        }
-
-        prom_builder = PromStrBuilder(
-            metric_name='iris_build_info',
-            metric_result=1,
-            help_str='This gives us iris build metadata',
-            type_str='gauge',
-            labels=iris_version_settings
-        )
-        prom_string = prom_builder.create_prom_string()
-        prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format('iris_build_info'))
-        prom_writer = PromFileWriter(logger=logger)
-        prom_writer.write_prom_file(False, prom_file_path, prom_string)
 
         # monitor the child processes (config_service, scheduler, etc.) & write to iris-{service}-up.prom files
         child_processes = [config_service_process, scheduler_process]
