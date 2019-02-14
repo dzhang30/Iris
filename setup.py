@@ -27,6 +27,7 @@ requires = [
     'pyinstaller==3.4',
     'pytest==3.10.0',
     'pytest-asyncio==0.9.0',
+    'pytest-mock==1.10.1',
     'python-daemon==2.2.0',
     'python-dateutil==2.7.5',
     'requests==2.21.0',

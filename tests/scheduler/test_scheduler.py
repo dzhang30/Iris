@@ -21,7 +21,7 @@ aiofiles.threadpool.wrap.register(mock.MagicMock)(
 
 
 @pytest.mark.asyncio
-async def test_scheduler_success():
+async def test_scheduler_success(mocker):
     linter = Linter(logger)
     global_config_obj = linter.lint_global_config(test_global_config_path)
     local_config_obj = linter.lint_metrics_config(global_config_obj, test_local_config_path)
@@ -31,6 +31,7 @@ async def test_scheduler_success():
 
     mock_file = mock.MagicMock()
     with mock.patch('aiofiles.threadpool.sync_open', return_value=mock_file):
+        mocker.patch('os.rename')
         metric_result = await scheduler.gather_asyncio_metrics()
 
     assert metric_result[0].shell_output == '5'
@@ -39,7 +40,7 @@ async def test_scheduler_success():
 
 
 @pytest.mark.asyncio
-async def test_scheduler_failure():
+async def test_scheduler_failure(mocker):
     linter = Linter(logger)
     global_config_obj = linter.lint_global_config(test_global_config_path)
     local_config_obj = linter.lint_metrics_config(global_config_obj, test_local_config_incorrect_path)
@@ -49,6 +50,7 @@ async def test_scheduler_failure():
 
     mock_file = mock.MagicMock()
     with mock.patch('aiofiles.threadpool.sync_open', return_value=mock_file):
+        mocker.patch('os.rename')
         metric_result = await scheduler.gather_asyncio_metrics()
 
     assert metric_result[0].shell_output == '/bin/sh: test_incorrect_metric: command not found'

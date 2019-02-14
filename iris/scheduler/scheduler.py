@@ -5,9 +5,8 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import List, Optional
 
-import aiofiles
-
 from iris.config_service.configs import Metric  # noqa: E402
+from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter  # noqa: E402
 
 
 @dataclass
@@ -32,14 +31,26 @@ class MetricResult:
                 self.logger.error(err_msg)
                 self.prom_result_value = -1.0
 
+    def get_prom_strings(self) -> List[str]:
+        main_metric_builder = PromStrBuilder(
+            metric_name=self.metric.name,
+            metric_result=self.prom_result_value,
+            help_str=self.metric.help,
+            type_str=self.metric.metric_type,
+            labels={'execution_frequency': self.metric.execution_frequency}
+        )
+        return_code_builder = PromStrBuilder(
+            metric_name='iris_{}_returncode'.format(self.metric.name),
+            metric_result=self.return_code,
+            help_str='the execution return code',
+            type_str='gauge',
+        )
+
+        return [main_metric_builder.create_prom_string(), return_code_builder.create_prom_string()]
+
     def __str__(self) -> str:
         template_str = 'MetricResult for: \'{}\'. PID: {}. Return_Code: {}. Result_Output: \'{}\''
         return template_str.format(self.metric.name, self.pid, self.return_code, self.shell_output)
-
-    def to_prom_format(self) -> str:
-        prom_format = '{}{{execution_frequency="{}",execution_timeout="{}",return_code="{}",timeout="{}"}} {}\n'
-        return prom_format.format(self.metric.name, self.metric.execution_frequency, self.metric.execution_timeout,
-                                  self.return_code, self.timeout, self.prom_result_value)
 
 
 @dataclass
@@ -79,7 +90,10 @@ class Scheduler:
 
     async def _run_asyncio_metric_task(self, metric_prom_file_path: str, metric: Metric) -> MetricResult:
         metric_result = await self._create_asyncio_metric_task(metric)
-        await self._write_asyncio_metric_result(metric_prom_file_path, metric_result)
+        result_prom_strings = metric_result.get_prom_strings()
+
+        prom_writer = PromFileWriter(logger=self.logger)
+        await prom_writer.write_prom_file(True, metric_prom_file_path, *result_prom_strings)  # type: ignore
 
         return metric_result
 
@@ -126,7 +140,3 @@ class Scheduler:
             task.cancel()
 
         return result
-
-    async def _write_asyncio_metric_result(self, prom_file_path: str, metric_result: MetricResult) -> None:
-        async with aiofiles.open(prom_file_path, 'w') as prom_file:
-            await prom_file.write(metric_result.to_prom_format())
