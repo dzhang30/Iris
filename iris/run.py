@@ -4,9 +4,9 @@ import os
 import time
 from configparser import ConfigParser
 
-from iris.config_service.aws.ec2_tags import EC2Tags
 from iris.config_service.run import run_config_service  # noqa: E402
 from iris.scheduler.run import run_scheduler  # noqa: E402
+from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter  # noqa: E402
 
 
 def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
@@ -31,7 +31,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         os.makedirs(prom_dir_path, exist_ok=True)
 
         # run config_service process
-        logger.info('Started the Config_Service child process')
+        logger.info('Starting the Config_Service child process')
 
         config_service_settings = iris_config['config_service_settings']
         run_config_service_params = {
@@ -52,11 +52,11 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             name='config_service',
             kwargs=run_config_service_params
         )
-
+        config_service_process.daemon = True  # cleanup config_service child process when main process exits
         config_service_process.start()
 
         # run scheduler process
-        logger.info('Started the Scheduler child process')
+        logger.info('Starting the Scheduler child process')
 
         scheduler_settings = iris_config['scheduler_settings']
         run_scheduler_params = {
@@ -70,49 +70,36 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             name='scheduler',
             kwargs=run_scheduler_params
         )
-
+        scheduler_process.daemon = True  # cleanup scheduler child process when main process exits
         scheduler_process.start()
 
         # monitor the child processes (config_service, scheduler, etc.) & write to iris-{service}-up.prom files
-        child_processes = [
-            {'process': config_service_process, 'up': 1},
-            {'process': scheduler_process, 'up': 1}]
-
+        child_processes = [config_service_process, scheduler_process]
         while True:
-            child_process_names = [child['process'].name for child in child_processes]  # type: ignore
+            child_process_names = [child.name for child in child_processes]
             logger.info('Monitoring child services: {}'.format(child_process_names))
 
-            ec2 = EC2Tags(
-                aws_creds_path=aws_credentials_path,
-                region_name=config_service_settings['ec2_region_name'],
-                ec2_metadata_url=config_service_settings['ec2_metadata_url'],
-                dev_instance_id=config_service_settings['ec2_dev_instance_id'],
-                dev_mode=dev_mode,
-                logger=logger
-            )
-
-            tags = ec2.get_iris_tags()
-            host_name = tags['name']
-            environment = tags['ihr:application:environment']
-            iris_profile = tags['ihr:iris:profile']
-
-            logger.info('Using iris tags as prom labels to generate iris_*_up.prom files for each child service')
             for child_process in child_processes:
-                pid = child_process['process'].pid  # type: ignore
-                name = child_process['process'].name  # type: ignore
-                exit_code = child_process['process'].exitcode  # type: ignore
+                pid = child_process.pid
+                process_name = child_process.name
+                exit_code = child_process.exitcode
 
-                if exit_code and child_process['up'] == 1:
+                if exit_code:
                     err_msg = 'The child process ({0}) running the {1} has failed with code {2}. Check the {1} logfile'
-                    logger.error(err_msg.format(pid, name, exit_code))
-                    child_process['up'] = 0
+                    logger.error(err_msg.format(pid, process_name, exit_code))
 
-                prom_format = 'iris_{}_up{{host_name="{}",environment="{}",iris_profile="{}"}} {}\n'
-                prom_file_path = os.path.join(prom_dir_path, 'iris_{}_up.prom'.format(name))
-                with open(prom_file_path, 'w') as prom_file:
-                    prom_string = prom_format.format(name, host_name, environment, iris_profile, child_process['up'])
-                    prom_file.write(prom_string)
-                    logger.info('Finished writing to {}. The result is {}'.format(prom_file_path, prom_string))
+                metric_name = 'iris_{}_up'.format(process_name)
+                prom_builder = PromStrBuilder(
+                    metric_name=metric_name,
+                    metric_result=1 if child_process.is_alive() else 0,
+                    help_str='Check if the {} process is still up.'.format(process_name),
+                    type_str='gauge'
+                )
+
+                prom_string = prom_builder.create_prom_string()
+                prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
+                prom_writer = PromFileWriter(logger=logger)
+                prom_writer.write_prom_file(False, prom_file_path, prom_string)
 
             logger.info('Sleeping for {}'.format(iris_monitor_frequency))
 
