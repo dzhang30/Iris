@@ -94,7 +94,7 @@ class Scheduler:
         result_prom_strings = metric_result.get_prom_strings()
 
         prom_writer = PromFileWriter(logger=self.logger)
-        await prom_writer.write_prom_file(True, prom_file_path, *result_prom_strings)  # type: ignore
+        await prom_writer.write_prom_file(prom_file_path, *result_prom_strings, is_async=True)  # type: ignore
 
         return metric_result
 
