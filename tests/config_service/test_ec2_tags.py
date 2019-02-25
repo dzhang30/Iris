@@ -8,7 +8,6 @@ from requests import ConnectionError
 from iris.config_service.aws.ec2_tags import EC2Tags
 
 test_aws_creds_path = 'tests/config_service/test_configs/test_aws_credentials'
-test_incorrect_path = 'tests/config_service/incorrect_path'
 
 test_logger = logging.getLogger('iris.test')
 
