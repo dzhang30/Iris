@@ -3,7 +3,7 @@ import os
 import time
 from dataclasses import dataclass
 from logging import Logger
-from typing import List, Optional
+from typing import List, Dict
 
 from iris.config_service.configs import Metric  # noqa: E402
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter  # noqa: E402
@@ -60,44 +60,45 @@ class Scheduler:
     logger: Logger
 
     def run(self) -> List[MetricResult]:
+        prom_file_paths_and_metrics = self.get_prom_files_to_write().items()
+        tasks = [self.run_metric_task(prom_path, metric) for prom_path, metric in prom_file_paths_and_metrics]
+
         loop = asyncio.get_event_loop()
-        res = loop.run_until_complete(self.gather_asyncio_metrics())
+        result = loop.run_until_complete(asyncio.gather(*tasks))
 
         self.logger.info('Finished writing to all prom files at: {}'.format(self.prom_dir_path))
 
-        return res
+        return result  # type: ignore
 
-    async def gather_asyncio_metrics(self) -> List[MetricResult]:
-        metrics_tasks = [self.run_asyncio_metric_task(metric) for metric in self.metrics if metric is not None]
+    def get_prom_files_to_write(self) -> Dict[str, Metric]:
+        prom_files_to_write = {}
+        for metric in self.metrics:
+            prom_file_path = os.path.join(self.prom_dir_path, '{}.prom'.format(metric.name))
 
-        return await asyncio.gather(*metrics_tasks)  # type: ignore
+            if os.path.isfile(prom_file_path):
+                prom_file_last_mod_time = os.stat(prom_file_path).st_mtime
+                elapsed_time = time.time() - prom_file_last_mod_time
 
-    async def run_asyncio_metric_task(self, metric: Metric) -> Optional[MetricResult]:
-        metric_prom_file_path = os.path.join(self.prom_dir_path, '{}.prom'.format(metric.name))
-
-        if os.path.isfile(metric_prom_file_path):
-            prom_file_last_mod_time = os.stat(metric_prom_file_path).st_mtime
-            elapsed_time = time.time() - prom_file_last_mod_time
-
-            if elapsed_time >= metric.execution_frequency:
-                return await self._run_asyncio_metric_task(metric_prom_file_path, metric)
+                if elapsed_time >= metric.execution_frequency:
+                    prom_files_to_write[prom_file_path] = metric
+                else:
+                    self.logger.info('Not running metric: {} yet. Execution frequency not met.'.format(metric.name))
             else:
-                self.logger.info('Not running metric: {} yet. Execution frequency not met.'.format(metric.name))
-                return None
-        else:
-            self.logger.info('Creating the new prom file at: {}'.format(metric_prom_file_path))
-            return await self._run_asyncio_metric_task(metric_prom_file_path, metric)
+                self.logger.info('Creating the new prom file at: {}'.format(prom_file_path))
+                prom_files_to_write[prom_file_path] = metric
 
-    async def _run_asyncio_metric_task(self, metric_prom_file_path: str, metric: Metric) -> MetricResult:
-        metric_result = await self._create_asyncio_metric_task(metric)
+        return prom_files_to_write
+
+    async def run_metric_task(self, prom_file_path: str, metric: Metric) -> MetricResult:
+        metric_result = await self._create_metric_task(metric)
         result_prom_strings = metric_result.get_prom_strings()
 
         prom_writer = PromFileWriter(logger=self.logger)
-        await prom_writer.write_prom_file(True, metric_prom_file_path, *result_prom_strings)  # type: ignore
+        await prom_writer.write_prom_file(True, prom_file_path, *result_prom_strings)  # type: ignore
 
         return metric_result
 
-    async def _create_asyncio_metric_task(self, metric: Metric) -> MetricResult:
+    async def _create_metric_task(self, metric: Metric) -> MetricResult:
         pipe = asyncio.subprocess.PIPE
         proc = await asyncio.create_subprocess_shell(cmd=metric.bash_command, stdout=pipe, stderr=pipe)
 
