@@ -43,7 +43,7 @@ class PromStrBuilder:
 class PromFileWriter:
     logger: Logger
 
-    def write_prom_file(self, is_async: bool, prom_file_path: str, *prom_strings: str) -> Optional[Awaitable]:
+    def write_prom_file(self, prom_file_path: str, *prom_strings: str, is_async: bool = False) -> Optional[Awaitable]:
         if len(prom_strings) < 1:
             self.logger.error('Please pass in a prom_string or a list of them to write to {}'.format(prom_file_path))
             return None
@@ -61,7 +61,7 @@ class PromFileWriter:
             prom_file.write(prom_string)
         os.rename(tmp_file_path, prom_file_path)  # Atomically update the prom file
 
-        self.logger.info('Finished synchronous write to {}. Result:\n{}'.format(prom_file_path, prom_string))
+        self.logger.info('Finished synchronous write to {}'.format(prom_file_path))
 
     async def write_prom_file_async_helper(self, prom_file_path: str, prom_string: str) -> None:
         tmp_file_path = '{}.tmp'.format(prom_file_path)
@@ -79,4 +79,4 @@ class PromFileWriter:
             self.logger.error(err_msg)
             raise FileNotFoundError(err_msg)
 
-        self.logger.info('Finished asynchronous write to {}. Result:\n{}'.format(prom_file_path, prom_string))
+        self.logger.info('Finished asynchronous write to {}'.format(prom_file_path))

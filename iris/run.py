@@ -60,7 +60,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         prom_string = prom_builder.create_prom_string()
         prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format('iris_build_info'))
         prom_writer = PromFileWriter(logger=logger)
-        prom_writer.write_prom_file(False, prom_file_path, prom_string)
+        prom_writer.write_prom_file(prom_file_path, prom_string)
 
         # run config_service process
         logger.info('Starting the Config_Service child process')
@@ -131,7 +131,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
                 prom_string = prom_builder.create_prom_string()
                 prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
                 prom_writer = PromFileWriter(logger=logger)
-                prom_writer.write_prom_file(False, prom_file_path, prom_string)
+                prom_writer.write_prom_file(prom_file_path, prom_string)
 
             logger.info('Sleeping for {}'.format(iris_monitor_frequency))
 
