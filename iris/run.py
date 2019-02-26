@@ -41,8 +41,8 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             logger.info('Creating symlink from {} to {}'.format(textfile_collector_path, prom_dir_path))
             os.symlink(textfile_collector_path, prom_dir_path)
 
-        # Expose Iris version metadata'
-        logger.info('Expose Iris version metadata via prom file')
+        # Expose Iris version metadata
+        logger.info('Exposing Iris version metadata via prom file')
         iris_version_settings = {
             'iris_version': IRIS_VERSION,
             'iris_revision': IRIS_REVISION,
@@ -76,6 +76,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             'ec2_dev_instance_id': config_service_settings['ec2_dev_instance_id'],
             'ec2_metadata_url': config_service_settings['ec2_metadata_url'],
             'local_config_path': local_config_file_path,
+            'prom_dir_path': prom_dir_path,
             'run_frequency': config_service_settings.getfloat('run_frequency'),
             'dev_mode': dev_mode
         }
@@ -105,6 +106,18 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         scheduler_process.daemon = True  # cleanup scheduler child process when main process exits
         scheduler_process.start()
 
+        # Indicate the parent is up
+        prom_builder = PromStrBuilder(
+            metric_name='iris_main_up',
+            metric_result=1,
+            help_str='Indicates if the Iris parent process is up',
+            type_str='gauge'
+        )
+        prom_string = prom_builder.create_prom_string()
+        prom_file_path = os.path.join(prom_dir_path, 'iris_main.prom')
+        prom_writer = PromFileWriter(logger=logger)
+        prom_writer.write_prom_file(prom_file_path, prom_string)
+
         # monitor the child processes (config_service, scheduler, etc.) & write to iris-{service}-up.prom files
         child_processes = [config_service_process, scheduler_process]
         while True:
@@ -124,12 +137,12 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
                 prom_builder = PromStrBuilder(
                     metric_name=metric_name,
                     metric_result=1 if child_process.is_alive() else 0,
-                    help_str='Check if the {} process is still up'.format(process_name),
+                    help_str='Indicate if the {} process is still up'.format(process_name),
                     type_str='gauge'
                 )
 
                 prom_string = prom_builder.create_prom_string()
-                prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
+                prom_file_path = os.path.join(prom_dir_path, 'iris_{}.prom'.format(process_name))
                 prom_writer = PromFileWriter(logger=logger)
                 prom_writer.write_prom_file(prom_file_path, prom_string)
 
@@ -139,4 +152,17 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
 
     except Exception as e:
         logger.debug(e)
+
+        # Indicate the parent is down
+        prom_builder = PromStrBuilder(
+            metric_name='iris_main_up',
+            metric_result=0,
+            help_str='Indicates if the Iris parent process is up',
+            type_str='gauge'
+        )
+        prom_string = prom_builder.create_prom_string()
+        prom_file_path = os.path.join(prom_dir_path, 'iris_main.prom')
+        prom_writer = PromFileWriter(logger=logger)
+        prom_writer.write_prom_file(prom_file_path, prom_string)
+
         raise

@@ -1,22 +1,25 @@
 import json
 import logging
 import os
+import tempfile
 import time
 
 from iris.config_service.aws.ec2_tags import EC2Tags
 from iris.config_service.aws.s3 import S3
 from iris.config_service.config_lint.linter import Linter
+from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 logger = logging.getLogger('iris.config_service')
 
 
 def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: str, s3_bucket_name: str,
                        s3_download_to_path: str, ec2_region_name: str, ec2_dev_instance_id: str, ec2_metadata_url: str,
-                       dev_mode: bool, local_config_path: str, run_frequency: float) -> None:
-    # Run config service S3 puller to get the config files from iris bucket
-    try:
-        while True:
-            logger.info('Starting Config_Service')
+                       local_config_path: str, prom_dir_path: str, run_frequency: float, dev_mode: bool) -> None:
+    error_flag = 0
+    while True:
+        # Run config service S3 puller to get the config files from iris bucket
+        try:
+            logger.info('Resuming the Config_Service')
 
             logger.info('Downloading content from s3 bucket: {} to dir: {}'.format(s3_bucket_name, s3_download_to_path))
 
@@ -82,16 +85,33 @@ def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: 
 
             logger.info('Generated the local_config object')
 
-            # write the local_config object to a file for the scheduler to use
-            with open(local_config_path, 'w') as outfile:
-                json.dump(local_config_metrics, outfile, indent=2)
-                logger.info('Finished writing to local_config file at {}'.format(local_config_path))
+            with tempfile.NamedTemporaryFile('w', delete=False) as tmpfile:
+                json.dump(local_config_metrics, tmpfile, indent=2)
+            os.rename(tmpfile.name, local_config_path)
 
-            logger.info('Finished Config_Service\n')
+            logger.info('Finished writing to local_config file at {}'.format(local_config_path))
+
+            error_flag = 0
+
+        # will log twice for defined err logs in iris, but will catch & log unlogged errs in code (3rd party err)
+        except Exception as e:
+            logger.error('Config_Service has an err: {}'.format(e))
+            error_flag = 1
+
+        finally:
+            metric_name = 'iris_config_service_error'
+            prom_builder = PromStrBuilder(
+                metric_name=metric_name,
+                metric_result=error_flag,
+                help_str='Indicate if an exception/error has occured in the Scheduler',
+                type_str='gauge'
+            )
+
+            prom_string = prom_builder.create_prom_string()
+            prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
+            prom_writer = PromFileWriter(logger=logger)
+            prom_writer.write_prom_file(prom_file_path, prom_string)
+
+            logger.info('Sleeping the Config_Service for {}\n'.format(run_frequency))
 
             time.sleep(run_frequency)
-
-    # will log twice for defined err logs in iris code, but will catch & log other unlogged errs in code (3rd party err)
-    except Exception as e:
-        logger.error(e)
-        raise
