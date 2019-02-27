@@ -77,7 +77,8 @@ class Linter:
                 diff_names.append((profile.name, '{}.json'.format(profile_key_name)))
 
         if diff_names:
-            err_msg = 'There are mismatches between profile names & their containing filenames: {}'.format(diff_names)
+            err_msg_format = 'There are mismatches between profile names & their containing filenames: {}'
+            err_msg = err_msg_format.format(', '.format(diff_names))
             self.logger.error(err_msg)
             raise ValueError(err_msg)
 

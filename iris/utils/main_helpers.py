@@ -31,13 +31,16 @@ def setup_iris_logging(iris_root_path: str) -> logging.Logger:
     return iris_main_logger
 
 
-def check_iris_test_settings(iris_config: ConfigParser, logger: logging.Logger) -> None:
+def check_iris_dev_settings(iris_config: ConfigParser, logger: logging.Logger) -> None:
     try:
         dev_mode = iris_config.getboolean('main_settings', 'dev_mode')
-    except Exception:
+    except ValueError as e:
         valid_boolean_values = ['true', 'false', 'yes', 'no', 'on', 'off', '1', '0', ]
-        err_msg = 'Please set the dev_mode field in iris.cfg to a valid boolean value: {}'.format(valid_boolean_values)
+
+        err_msg_format = '{}. Please set dev_mode in iris.cfg to a valid boolean value: {}'
+        err_msg = err_msg_format.format(e, ', '.join(valid_boolean_values))
         logger.error(err_msg)
+
         raise ValueError(err_msg)
 
     test_ec2_instance_id = iris_config['config_service_settings']['ec2_dev_instance_id']

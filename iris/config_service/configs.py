@@ -98,4 +98,4 @@ class Profile:
         util.detect_list_duplicates(self.metrics, '{} profile metrics'.format(self.name), self.logger)
 
     def __str__(self) -> str:
-        return 'Profile {} containing the metrics: {}'.format(self.name, self.metrics)
+        return 'Profile {} containing the metrics: {}'.format(self.name, ', '.format(self.metrics))

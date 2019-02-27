@@ -16,7 +16,7 @@ def main(iris_config: ConfigParser) -> None:
 
     iris_main_logger = main_helpers.setup_iris_logging(iris_root_path=iris_root_path)
 
-    main_helpers.check_iris_test_settings(iris_config, iris_main_logger)
+    main_helpers.check_iris_dev_settings(iris_config, iris_main_logger)
 
     run_iris(logger=iris_main_logger, iris_config=iris_config)
 
