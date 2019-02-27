@@ -2,9 +2,9 @@ import logging
 import os
 import time
 
-from iris.config_service.config_lint.linter import Linter  # noqa: E402
-from iris.scheduler.scheduler import Scheduler  # noqa: E402
-from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter  # noqa: E402
+from iris.config_service.config_lint.linter import Linter
+from iris.scheduler.scheduler import Scheduler
+from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 logger = logging.getLogger('iris.scheduler')
 
