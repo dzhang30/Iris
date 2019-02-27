@@ -3,10 +3,11 @@ import multiprocessing
 import os
 import time
 from configparser import ConfigParser
+from typing import Optional
 
-from iris.config_service.run import run_config_service  # noqa: E402
-from iris.scheduler.run import run_scheduler  # noqa: E402
-from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter  # noqa: E402
+from iris.config_service.run import run_config_service
+from iris.scheduler.run import run_scheduler
+from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 # Version constants - these will be updated at build time.
 IRIS_VERSION = 'n/a'
@@ -41,8 +42,8 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             logger.info('Creating symlink from {} to {}'.format(textfile_collector_path, prom_dir_path))
             os.symlink(textfile_collector_path, prom_dir_path)
 
-        # Expose Iris version metadata'
-        logger.info('Expose Iris version metadata via prom file')
+        # Expose Iris version metadata
+        logger.info('Exposing Iris version metadata via prom file')
         iris_version_settings = {
             'iris_version': IRIS_VERSION,
             'iris_revision': IRIS_REVISION,
@@ -57,6 +58,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             type_str='gauge',
             labels=iris_version_settings
         )
+
         prom_string = prom_builder.create_prom_string()
         prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format('iris_build_info'))
         prom_writer = PromFileWriter(logger=logger)
@@ -76,6 +78,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             'ec2_dev_instance_id': config_service_settings['ec2_dev_instance_id'],
             'ec2_metadata_url': config_service_settings['ec2_metadata_url'],
             'local_config_path': local_config_file_path,
+            'prom_dir_path': prom_dir_path,
             'run_frequency': config_service_settings.getfloat('run_frequency'),
             'dev_mode': dev_mode
         }
@@ -105,38 +108,83 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         scheduler_process.daemon = True  # cleanup scheduler child process when main process exits
         scheduler_process.start()
 
+        # Indicate the parent is up
+        prom_builder = PromStrBuilder(
+            metric_name='iris_main_up',
+            metric_result=1,
+            help_str='Indicates if the Iris parent process is up',
+            type_str='gauge'
+        )
+
+        prom_string = prom_builder.create_prom_string()
+        prom_file_path = os.path.join(prom_dir_path, 'iris_main.prom')
+        prom_writer = PromFileWriter(logger=logger)
+        prom_writer.write_prom_file(prom_file_path, prom_string)
+
         # monitor the child processes (config_service, scheduler, etc.) & write to iris-{service}-up.prom files
-        child_processes = [config_service_process, scheduler_process]
+        child_processes = [ChildProcess(config_service_process), ChildProcess(scheduler_process)]
         while True:
-            child_process_names = [child.name for child in child_processes]
-            logger.info('Monitoring child services: {}'.format(child_process_names))
+            logger.info('Monitoring child services: {}'.format(', '.join([child.name for child in child_processes])))
 
             for child_process in child_processes:
-                pid = child_process.pid
                 process_name = child_process.name
-                exit_code = child_process.exitcode
+                if not child_process.is_alive():
+                    err_msg = 'The {0} ({1}) has failed with exit_code {2}. Check the {0} log'
+                    logger.error(err_msg.format(process_name, child_process.pid, child_process.get_exit_code()))
 
-                if exit_code:
-                    err_msg = 'The child process ({0}) running the {1} has failed with code {2}. Check the {1} logfile'
-                    logger.error(err_msg.format(pid, process_name, exit_code))
+                    if not child_process.already_logged:
+                        child_process.log_terminate()
+                        child_process.already_logged = True
 
                 metric_name = 'iris_{}_up'.format(process_name)
+                metric_up_result = int(child_process.is_alive())
                 prom_builder = PromStrBuilder(
                     metric_name=metric_name,
-                    metric_result=1 if child_process.is_alive() else 0,
-                    help_str='Check if the {} process is still up'.format(process_name),
+                    metric_result=metric_up_result,
+                    help_str='Indicate if the {} process is still up'.format(process_name),
                     type_str='gauge'
                 )
 
                 prom_string = prom_builder.create_prom_string()
-                prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
+                prom_file_path = os.path.join(prom_dir_path, 'iris_{}.prom'.format(process_name))
                 prom_writer = PromFileWriter(logger=logger)
                 prom_writer.write_prom_file(prom_file_path, prom_string)
 
-            logger.info('Sleeping for {}'.format(iris_monitor_frequency))
+            logger.info('Sleeping for {}\n'.format(iris_monitor_frequency))
 
             time.sleep(iris_monitor_frequency)
 
     except Exception as e:
-        logger.debug(e)
+        logger.error(e)
+
+        # Indicate the parent is down
+        prom_builder = PromStrBuilder(
+            metric_name='iris_main_up',
+            metric_result=0,
+            help_str='Indicates if the Iris parent process is up',
+            type_str='gauge'
+        )
+        prom_string = prom_builder.create_prom_string()
+        prom_file_path = os.path.join(prom_dir_path, 'iris_main.prom')
+        prom_writer = PromFileWriter(logger=logger)
+        prom_writer.write_prom_file(prom_file_path, prom_string)
+
         raise
+
+
+class ChildProcess():
+    def __init__(self, process: multiprocessing.Process, already_logged: bool = False):
+        self.pid = process.pid
+        self.name = process.name
+        self.already_logged = already_logged
+        self._process = process
+
+    def is_alive(self) -> bool:
+        return self._process.is_alive()
+
+    def get_exit_code(self) -> Optional[int]:
+        return self._process.exitcode
+
+    def log_terminate(self) -> None:
+        logger = logging.getLogger('iris.{}'.format(self.name))
+        logger.error('Terminated the {} with exit_code {}'.format(self.name, self.get_exit_code()))
