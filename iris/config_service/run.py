@@ -4,7 +4,7 @@ import os
 import tempfile
 import time
 
-from iris.config_service.aws.ec2_tags import EC2Tags
+from iris.config_service.aws.ec2_tags import EC2Tags, MissingIrisTagsError
 from iris.config_service.aws.s3 import S3
 from iris.config_service.config_lint.linter import Linter
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
@@ -15,7 +15,8 @@ logger = logging.getLogger('iris.config_service')
 def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: str, s3_bucket_name: str,
                        s3_download_to_path: str, ec2_region_name: str, ec2_dev_instance_id: str, ec2_metadata_url: str,
                        local_config_path: str, prom_dir_path: str, run_frequency: float, dev_mode: bool) -> None:
-    error_flag = 0
+    general_error_flag = False
+    missing_iris_tags_error_flag = False
     while True:
         # Run config service S3 puller to get the config files from iris bucket
         try:
@@ -91,26 +92,42 @@ def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: 
 
             logger.info('Finished writing to local_config file at {}'.format(local_config_path))
 
-            error_flag = 0
+            general_error_flag = False
+            missing_iris_tags_error_flag = False
+
+        except MissingIrisTagsError as e:
+            logger.error('Config_Service MissingIrisTagsError: {}'.format(e))
+            missing_iris_tags_error_flag = True
 
         # will log twice for defined err logs in iris, but will catch & log unlogged errs in code (3rd party err)
         except Exception as e:
             logger.error('Config_Service has an err: {}'.format(e))
-            error_flag = 1
+            general_error_flag = True
 
         finally:
-            metric_name = 'iris_config_service_error'
-            prom_builder = PromStrBuilder(
-                metric_name=metric_name,
-                metric_result=error_flag,
-                help_str='Indicate if an exception/error has occured in the Scheduler',
+            general_error_name = 'iris_config_service_error'
+            general_error_prom_builder = PromStrBuilder(
+                metric_name=general_error_name,
+                metric_result=int(general_error_flag),
+                help_str='Indicate if a general exception/error has occured in the Scheduler',
                 type_str='gauge'
             )
+            general_error_prom_string = general_error_prom_builder.create_prom_string()
+            general_error_prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(general_error_name))
 
-            prom_string = prom_builder.create_prom_string()
-            prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
+            missing_iris_tags_name = 'iris_missing_ec2_tags'
+            missing_iris_tags_prom_builder = PromStrBuilder(
+                metric_name=missing_iris_tags_name,
+                metric_result=int(missing_iris_tags_error_flag),
+                help_str='Indicate if the ec2 host is missing the iris tags',
+                type_str='gauge'
+            )
+            missing_iris_tags_prom_string = missing_iris_tags_prom_builder.create_prom_string()
+            missing_iris_tags_prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(missing_iris_tags_name))
+
             prom_writer = PromFileWriter(logger=logger)
-            prom_writer.write_prom_file(prom_file_path, prom_string)
+            prom_writer.write_prom_file(general_error_prom_file_path, general_error_prom_string)
+            prom_writer.write_prom_file(missing_iris_tags_prom_file_path, missing_iris_tags_prom_string)
 
             logger.info('Sleeping the Config_Service for {}\n'.format(run_frequency))
 
