@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import time
 from configparser import ConfigParser
+from dataclasses import dataclass
 from typing import Optional
 
 from iris.config_service.run import run_config_service
@@ -172,12 +173,14 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         raise
 
 
+@dataclass
 class ChildProcess():
-    def __init__(self, process: multiprocessing.Process, already_logged: bool = False):
-        self.pid = process.pid
-        self.name = process.name
-        self.already_logged = already_logged
-        self._process = process
+    _process: multiprocessing.Process
+    already_logged: bool = False
+
+    def __post_init__(self) -> None:
+        self.pid = self._process.pid
+        self.name = self._process.name
 
     def is_alive(self) -> bool:
         return self._process.is_alive()
