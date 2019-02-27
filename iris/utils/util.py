@@ -47,7 +47,7 @@ def detect_list_duplicates(items: List[Any], item_description: str, logger: Logg
         unique_items.add(item)
 
     if duplicate_items:
-        err_msg = 'There are duplicate {}: {}'.format(item_description, duplicate_items)
+        err_msg = 'There are duplicate {}: {}'.format(item_description, ', '.format(duplicate_items))
         logger.error(err_msg)
         raise ValueError(err_msg)
 

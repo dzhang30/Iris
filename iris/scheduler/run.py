@@ -38,7 +38,7 @@ def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path
             local_config_obj = linter.lint_metrics_config(global_config_obj, local_config_path)
             metrics_list = list(local_config_obj.values())
 
-            logger.info('Reading local_config file with metrics {}'.format([metric.name for metric in metrics_list]))
+            logger.info('Read local_config file metrics {}'.format(', '.join([metric.name for metric in metrics_list])))
 
             # run scheduler to asynchronously execute each metric and asynchronously write to the metric's prom file
             scheduler = Scheduler(metrics_list, prom_dir_path, logger=logger)

@@ -70,7 +70,7 @@ def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: 
 
             iris_profile = ec2_iris_tags['ihr:iris:profile']
             if iris_profile not in profiles:
-                err_msg = 'The ihr:iris:profile tag on {} is not defined in any profile configs'.format(ec2.instance_id)
+                err_msg = 'The ihr:iris:profile tag on {} is not defined in any profile config'.format(ec2.instance_id)
                 logger.error(err_msg)
                 raise KeyError(err_msg)
 

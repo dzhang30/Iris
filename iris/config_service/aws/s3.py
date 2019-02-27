@@ -45,7 +45,7 @@ class S3:
 
             self._bucket.download_file(object_.key, os.path.join(download_path, object_.key))
 
-        self.logger.info('Downloaded {} files. Files: {}.'.format(len(downloaded_files), downloaded_files))
+        self.logger.info('Downloaded {} files. Files: {}.'.format(len(downloaded_files), ', '.join(downloaded_files)))
 
         return downloaded_files
 

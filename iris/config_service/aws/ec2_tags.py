@@ -49,7 +49,7 @@ class EC2Tags:
         if not instance_tags:
             err_code = ec2_error.response['Error']['Code']
             err_msg = ec2_error.response['Error']['Message']
-            new_err_msg = '{0}. Could not find the instance in any defined aws profiles {1}'.format(err_msg, profiles)
+            new_err_msg = '{}. Can not find the instance in these aws profiles {}'.format(err_msg, ', '.join(profiles))
             self.logger.error(new_err_msg)
             raise ClientError({'Error': {'Code': err_code, 'Message': new_err_msg}}, ec2_error.operation_name)
 
@@ -72,8 +72,8 @@ class EC2Tags:
                 iris_tags['name'] = tag['Value']
 
         if 'ihr:iris:profile' not in iris_tags or 'ihr:iris:enabled' not in iris_tags:
-            err_msg = 'Instance {} does not have tags ihr:iris:profile & ihr:iris:enabled. It only has {}'.format(
-                self.instance_id, iris_tags)
+            err_msg_format = 'Instance {} does not have tags ihr:iris:profile & ihr:iris:enabled. It only has {}'
+            err_msg = err_msg_format.format(self.instance_id, iris_tags)
             self.logger.error(err_msg)
             raise MissingIrisTagsError(err_msg)
 
