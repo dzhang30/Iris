@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from typing import Tuple
 
 from iris.config_service.config_lint.linter import Linter
 from iris.scheduler.scheduler import Scheduler
