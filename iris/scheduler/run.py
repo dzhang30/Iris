@@ -9,7 +9,8 @@ from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 logger = logging.getLogger('iris.scheduler')
 
 
-def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path: str, run_frequency: float) -> None:
+def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path: str, run_frequency: float,
+                  internal_metrics_whitelist: Tuple[str]) -> None:
     error_flag = 0
     while True:
         try:
@@ -52,6 +53,8 @@ def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path
             error_flag = 1
 
         finally:
+            prom_writer = PromFileWriter(logger=logger)
+
             metric_name = 'iris_scheduler_error'
             prom_builder = PromStrBuilder(
                 metric_name=metric_name,
@@ -62,7 +65,25 @@ def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path
 
             prom_string = prom_builder.create_prom_string()
             prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
-            prom_writer = PromFileWriter(logger=logger)
+            prom_writer.write_prom_file(prom_file_path, prom_string)
+
+            # count how many custom metrics prom files are currently being exposed and create the prom file
+            custom_metrics_count_result = 0
+            for prom_file in os.listdir(prom_dir_path):
+                metric_name = prom_file.replace('.prom', '')
+                if metric_name not in internal_metrics_whitelist:
+                    custom_metrics_count_result += 1
+
+            metric_name = 'iris_custom_metrics_count'
+            prom_builder = PromStrBuilder(
+                metric_name=metric_name,
+                metric_result=custom_metrics_count_result,
+                help_str='Indicate how many custom metrics the Scheduler is exposing',
+                type_str='gauge'
+            )
+
+            prom_string = prom_builder.create_prom_string()
+            prom_file_path = os.path.join(prom_dir_path, '{}.prom'.format(metric_name))
             prom_writer.write_prom_file(prom_file_path, prom_string)
 
             logger.info('Sleeping the Scheduler for {} seconds\n'.format(run_frequency))

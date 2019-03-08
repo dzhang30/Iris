@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from iris.config_service.run import run_config_service
+from iris.garbage_collector.run import run_garbage_collector
 from iris.scheduler.run import run_scheduler
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
@@ -15,6 +16,19 @@ IRIS_VERSION = 'n/a'
 IRIS_REVISION = 'n/a'
 IRIS_PYTHON_VERSION = 'n/a'
 IRIS_BUILD_DATE = 'n/a'
+
+internal_metrics_whitelist = (
+    'iris_build_info',
+    'iris_missing_ec2_tags',
+    'iris_custom_metrics_count',
+    'iris_main',
+    'iris_config_service',
+    'iris_config_service_error',
+    'iris_scheduler',
+    'iris_scheduler_error',
+    'iris_garbage_collector_error',
+    'iris_garbage_collector_stale_files_deleted',
+)
 
 
 def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
@@ -99,7 +113,8 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             'global_config_path': global_config_file_path,
             'local_config_path': local_config_file_path,
             'prom_dir_path': prom_dir_path,
-            'run_frequency': scheduler_settings.getfloat('run_frequency')
+            'run_frequency': scheduler_settings.getfloat('run_frequency'),
+            'internal_metrics_whitelist': internal_metrics_whitelist,
         }
         scheduler_process = multiprocessing.Process(
             target=run_scheduler,
@@ -108,6 +123,25 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         )
         scheduler_process.daemon = True  # cleanup scheduler child process when main process exits
         scheduler_process.start()
+
+        # run garbage collector process
+        logger.info('Starting the Garbage Collector child process')
+
+        scheduler_settings = iris_config['garbage_collector_settings']
+        run_garbage_collector_params = {
+            'global_config_path': global_config_file_path,
+            'local_config_path': local_config_file_path,
+            'prom_dir_path': prom_dir_path,
+            'run_frequency': scheduler_settings.getfloat('run_frequency'),
+            'internal_metrics_whitelist': internal_metrics_whitelist,
+        }
+        garbage_collector_process = multiprocessing.Process(
+            target=run_garbage_collector,
+            name='garbage_collector',
+            kwargs=run_garbage_collector_params
+        )
+        garbage_collector_process.daemon = True  # cleanup scheduler child process when main process exits
+        garbage_collector_process.start()
 
         # Indicate the parent is up
         prom_builder = PromStrBuilder(
@@ -123,7 +157,11 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         prom_writer.write_prom_file(prom_file_path, prom_string)
 
         # monitor the child processes (config_service, scheduler, etc.) & write to iris-{service}-up.prom files
-        child_processes = [ChildProcess(config_service_process), ChildProcess(scheduler_process)]
+        child_processes = [
+            ChildProcess(config_service_process),
+            ChildProcess(scheduler_process),
+            ChildProcess(garbage_collector_process),
+        ]
         while True:
             logger.info('Monitoring child services: {}'.format(', '.join([child.name for child in child_processes])))
 
@@ -174,7 +212,7 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
 
 
 @dataclass
-class ChildProcess():
+class ChildProcess:
     _process: multiprocessing.Process
     already_logged: bool = False
 
