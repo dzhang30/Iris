@@ -23,12 +23,17 @@ def setup_iris_logging(iris_root_path: str) -> logging.Logger:
     scheduler_file_handler.setFormatter(format)
     logging.getLogger('iris.scheduler').addHandler(scheduler_file_handler)
 
+    garbage_collector_file_handler = logging.FileHandler(os.path.join(iris_log_path, 'garbage_collector.log'))
+    garbage_collector_file_handler.setFormatter(format)
+    logging.getLogger('iris.garbage_collector').addHandler(garbage_collector_file_handler)
+
     iris_main_file_handler = logging.FileHandler(os.path.join(iris_log_path, 'iris_main.log'))
     iris_main_file_handler.setFormatter(format)
     iris_main_logger = logging.getLogger('iris.main')
     iris_main_logger.addHandler(iris_main_file_handler)
 
     return iris_main_logger
+
 
 
 def check_iris_dev_settings(iris_config: ConfigParser, logger: logging.Logger) -> None:
