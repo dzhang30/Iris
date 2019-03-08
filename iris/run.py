@@ -26,8 +26,9 @@ internal_metrics_whitelist = (
     'iris_config_service_error',
     'iris_scheduler',
     'iris_scheduler_error',
+    'iris_garbage_collector',
     'iris_garbage_collector_error',
-    'iris_garbage_collector_stale_files_deleted',
+    'iris_garbage_collector_deleted_stale_files',
 )
 
 
