@@ -1,6 +1,4 @@
 {
-  "config_service_pull_freq": 300,
-  "garbage_collector_run_freq": 60,
   "execution_timeout": 30,
   "max_execution_frequency": 86400,
   "min_execution_frequency": 10

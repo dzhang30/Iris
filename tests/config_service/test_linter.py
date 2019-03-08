@@ -17,9 +17,7 @@ test_logger = logging.getLogger('iris.test')
 
 
 def test_lint_global_config():
-    expected_global_config = GlobalConfig(config_service_pull_freq=300,
-                                          garbage_collector_run_freq=60,
-                                          exec_timeout=30,
+    expected_global_config = GlobalConfig(exec_timeout=30,
                                           max_exec_freq=86400,
                                           min_exec_freq=10,
                                           logger=test_logger)

@@ -47,8 +47,6 @@ class Linter:
 
     def _json_to_global(self, global_config_json: Dict[str, Any]) -> GlobalConfig:
         return GlobalConfig(
-            config_service_pull_freq=global_config_json['config_service_pull_freq'],
-            garbage_collector_run_freq=global_config_json['garbage_collector_run_freq'],
             exec_timeout=global_config_json['execution_timeout'],
             min_exec_freq=global_config_json['min_execution_frequency'],
             max_exec_freq=global_config_json['max_execution_frequency'],
