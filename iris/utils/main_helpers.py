@@ -35,7 +35,6 @@ def setup_iris_logging(iris_root_path: str) -> logging.Logger:
     return iris_main_logger
 
 
-
 def check_iris_dev_settings(iris_config: ConfigParser, logger: logging.Logger) -> None:
     try:
         dev_mode = iris_config.getboolean('main_settings', 'dev_mode')
