@@ -17,9 +17,10 @@ class GarbageCollector():
         deleted_files = []
 
         # remove stale custom metric prom files
-        for prom_file_path in os.listdir(self.prom_dir_path):
-            prom_name = prom_file_path.replace('.prom', '')
+        for prom_file_name in os.listdir(self.prom_dir_path):
+            prom_name = prom_file_name.replace('.prom', '')
             if prom_name not in self.local_config_obj and prom_name not in self.internal_metrics_whitelist:
+                prom_file_path = os.path.join(self.prom_dir_path, prom_file_name)
                 try:
                     os.remove(prom_file_path)
                     deleted_files.append(prom_file_path)
