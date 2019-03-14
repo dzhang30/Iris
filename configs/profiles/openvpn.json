@@ -1,0 +1,8 @@
+{
+  "profile_name": "openvpn",
+  "metrics": [
+    "openvpn_proc_count",
+    "node_running_processes",
+    "zombie_processes_count"
+  ]
+}
