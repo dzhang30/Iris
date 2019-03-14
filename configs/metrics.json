@@ -23,8 +23,8 @@
   "node_open_file_descriptors": {
     "help": "The number of open file descriptors on the node",
     "metric_type": "gauge",
-    "execution_frequency": 12,
-    "bash_command": "lsof | wc -l",
+    "execution_frequency": 60,
+    "bash_command": "lsof -n | wc -l",
     "export_method": "textfile"
   },
   "bs_incorrect_metric": {
