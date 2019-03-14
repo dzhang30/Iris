@@ -1,19 +1,19 @@
-import logging
 import os
 import time
 from typing import Tuple
 
 from iris.config_service.config_lint.linter import Linter
 from iris.garbage_collector.garbage_collector import GarbageCollector
+from iris.utils.iris_logging import get_logger
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
-
-logger = logging.getLogger('iris.garbage_collector')
 
 
 def run_garbage_collector(global_config_path: str, local_config_path: str, prom_dir_path: str, run_frequency: float,
-                          internal_metrics_whitelist: Tuple[str]) -> None:
-    general_error_flag = False
+                          internal_metrics_whitelist: Tuple[str], log_path: str, log_debug_path: str, ) -> None:
+    logger = get_logger('iris.garbage_collector', log_path, log_debug_path)
+
     prom_writer = PromFileWriter(logger=logger)
+    general_error_flag = False
     while True:
         try:
             logger.info('Resuming the Garbage_Collector')

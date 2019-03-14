@@ -22,7 +22,10 @@ def read_config_file(config_path: str, logger: Logger = None) -> ConfigParser:
 def check_file_exists(file_path: str, file_type: str, logger: Logger) -> bool:
     if not os.path.isfile(file_path):
         err_msg = 'The {} file path {} does not exist or is incorrect. Check the path'.format(file_type, file_path)
-        logger.error(err_msg)
+        if file_type == 'aws_credentials':
+            logger.error(err_msg)
+        else:
+            logger.warning(err_msg)
         raise OSError(err_msg)
 
     return True
