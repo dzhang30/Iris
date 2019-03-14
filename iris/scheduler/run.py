@@ -1,22 +1,20 @@
-import logging
 import os
 import time
 from typing import Tuple
 
 from iris.config_service.config_lint.linter import Linter
 from iris.scheduler.scheduler import Scheduler
+from iris.utils.iris_logging import get_logger
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
-
-logger = logging.getLogger('iris.scheduler')
 
 
 def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path: str, run_frequency: float,
-                  internal_metrics_whitelist: Tuple[str]) -> None:
+                  internal_metrics_whitelist: Tuple[str], log_path: str, log_debug_path: str, ) -> None:
+    logger = get_logger('iris.scheduler', log_path, log_debug_path)
+
     error_flag = 0
     while True:
         try:
-            logger.info('Resuming the Scheduler')
-
             sleep_total = 0  # the accumulated sleep time for checking the global_config and local_config
             sleep_increment = 10  # check for global_config and local_config every 5 seconds if they don't exist
             max_wait_time = 120  # max wait/sleep time that the scheduler will wait for these configs

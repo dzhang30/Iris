@@ -44,6 +44,12 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
         logger.info('Starting IRIS in {} mode\n'.format('DEV' if dev_mode else 'PROD'))
 
         # set path variables
+        log_debug_file_path = os.path.join(iris_root_path, 'iris.debug')
+        log_dir_path = os.path.join(iris_root_path, 'logs')
+        config_service_log_path = os.path.join(log_dir_path, 'config_service.log')
+        scheduler_log_path = os.path.join(log_dir_path, 'scheduler.log')
+        garbage_collector_log_path = os.path.join(log_dir_path, 'garbage_collector.log')
+
         aws_credentials_path = os.path.join(iris_root_path, 'aws_credentials')
         s3_download_to_path = os.path.join(iris_root_path, 'downloads')
         local_config_file_path = os.path.join(iris_root_path, 'local_config.json')
@@ -96,6 +102,8 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             'local_config_path': local_config_file_path,
             'prom_dir_path': prom_dir_path,
             'run_frequency': config_service_settings.getfloat('run_frequency'),
+            'log_path': config_service_log_path,
+            'log_debug_path': log_debug_file_path,
             'dev_mode': dev_mode
         }
         config_service_process = multiprocessing.Process(
@@ -116,6 +124,8 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             'prom_dir_path': prom_dir_path,
             'run_frequency': scheduler_settings.getfloat('run_frequency'),
             'internal_metrics_whitelist': internal_metrics_whitelist,
+            'log_path': scheduler_log_path,
+            'log_debug_path': log_debug_file_path,
         }
         scheduler_process = multiprocessing.Process(
             target=run_scheduler,
@@ -135,6 +145,8 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
             'prom_dir_path': prom_dir_path,
             'run_frequency': scheduler_settings.getfloat('run_frequency'),
             'internal_metrics_whitelist': internal_metrics_whitelist,
+            'log_path': garbage_collector_log_path,
+            'log_debug_path': log_debug_file_path,
         }
         garbage_collector_process = multiprocessing.Process(
             target=run_garbage_collector,

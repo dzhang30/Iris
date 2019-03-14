@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import tempfile
 import time
@@ -7,14 +6,16 @@ import time
 from iris.config_service.aws.ec2_tags import EC2Tags, MissingIrisTagsError
 from iris.config_service.aws.s3 import S3
 from iris.config_service.config_lint.linter import Linter
+from iris.utils.iris_logging import get_logger
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
-
-logger = logging.getLogger('iris.config_service')
 
 
 def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: str, s3_bucket_name: str,
                        s3_download_to_path: str, ec2_region_name: str, ec2_dev_instance_id: str, ec2_metadata_url: str,
-                       local_config_path: str, prom_dir_path: str, run_frequency: float, dev_mode: bool) -> None:
+                       local_config_path: str, prom_dir_path: str, run_frequency: float, log_path: str,
+                       log_debug_path: str, dev_mode: bool) -> None:
+    logger = get_logger('iris.config_service', log_path, log_debug_path)
+
     general_error_flag = False
     missing_iris_tags_error_flag = False
     while True:
