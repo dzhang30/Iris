@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import List, Dict
 
-from iris.config_service.configs import Metric  # noqa: E402
-from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter  # noqa: E402
+from iris.config_service.configs import Metric
+from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 
 @dataclass
@@ -105,39 +105,31 @@ class Scheduler:
         self.logger.info('Running metric: {}. pid: {}'.format(metric.name, proc.pid))
         task = asyncio.create_task(proc.communicate())
 
-        _, pending = await asyncio.wait([task], timeout=metric.execution_timeout)
+        try:
+            result = await asyncio.wait_for(task, timeout=metric.execution_timeout)
+            shell_output = result[0].decode('utf-8').strip() if result[0] else result[1].decode('utf-8').strip()
 
-        if proc.returncode == 0:
-            result = MetricResult(
+            metric_result = MetricResult(
                 metric=metric,
                 pid=proc.pid,
                 timeout=False,
                 return_code=proc.returncode,
-                shell_output=task.result()[0].decode('utf-8').strip(),
+                shell_output=shell_output,
                 logger=self.logger
             )
-            self.logger.info(result)
-        else:
-            # a process object in a pending state will not have its return_code attribute set, so we default it to -1
-            if task in pending:
-                result = MetricResult(
-                    metric=metric,
-                    pid=proc.pid,
-                    timeout=True,
-                    return_code=-1,
-                    shell_output='TIMEOUT',
-                    logger=self.logger
-                )
-            else:
-                result = MetricResult(
-                    metric=metric,
-                    pid=proc.pid,
-                    timeout=False,
-                    return_code=proc.returncode,
-                    shell_output=task.result()[1].decode('utf-8').strip(),
-                    logger=self.logger
-                )
-            self.logger.error(result)
-            task.cancel()
+            self.logger.info(metric_result)
 
-        return result
+        except asyncio.TimeoutError:
+            metric_result = MetricResult(
+                metric=metric,
+                pid=proc.pid,
+                timeout=True,
+                return_code=-1,
+                shell_output='TIMEOUT',
+                logger=self.logger
+            )
+            self.logger.error(metric_result)
+
+            proc.terminate()
+
+        return metric_result
