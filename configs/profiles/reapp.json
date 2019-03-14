@@ -1,11 +1,9 @@
 {
-  "profile_name": "tvclient",
+  "profile_name": "reapp",
   "metrics": [
     "node_logged_in_users",
     "node_running_processes",
     "zombie_processes_count",
-    "random_value",
-    "node_open_file_descriptors",
-    "bs_incorrect_metric"
+    "node_open_file_descriptors"
   ]
 }

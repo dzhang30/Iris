@@ -1,0 +1,6 @@
+{
+  "profile_name": "debug",
+  "metrics": [
+    "timeout_test"
+  ]
+}

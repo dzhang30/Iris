@@ -33,5 +33,54 @@
     "execution_frequency": 11,
     "bash_command": "aklsdhfkla",
     "export_method": "textfile"
+  },
+  "openvpn_proc_count": {
+    "help": "Number of running OpenVPN processes",
+    "metric_type": "gauge",
+    "execution_frequency": 60,
+    "bash_command": "ps aux | grep openvpn | grep -v grep | wc -l",
+    "export_method": "textfile"
+  },
+  "quickio_cpu_percent": {
+    "help": "Percentage of system CPU used by QuickIO process",
+    "metric_type": "gauge",
+    "execution_frequency": 60,
+    "bash_command": "ps aux | grep ^quickio | awk '{print $3}'",
+    "export_method": "textfile"
+  },
+  "quickio_mem_percent": {
+    "help": "Percentage of system memory used by QuickIO process",
+    "metric_type": "gauge",
+    "execution_frequency": 60,
+    "bash_command": "ps aux | grep ^quickio | awk '{print $4}'",
+    "export_method": "textfile"
+  },
+  "mediad_cpu_percent": {
+    "help": "Percentage of CPU used by MediaD process",
+    "metric_type": "gauge",
+    "execution_frequency": 60,
+    "bash_command": "ps aux | grep /go/bin/mediad | grep -v grep | awk '{print $3}'",
+    "export_method": "textfile"
+  },
+  "mediad_mem_percent": {
+    "help": "Percentage of system memory used by MediaD process",
+    "metric_type": "gauge",
+    "execution_frequency": 60,
+    "bash_command": "ps aux | grep /go/bin/mediad | grep -v grep | awk '{print $4}'",
+    "export_method": "textfile"
+  },
+  "timeout_test": {
+    "help": "Tests timeout functionality",
+    "metric_type": "gauge",
+    "execution_frequency": 10,
+    "bash_command": "sleep 100 && echo 1",
+    "export_method": "textfile"
+  },
+  "random_value" : {
+    "help": "random value for testing",
+    "metric_type": "gauge",
+    "execution_frequency": 11,
+    "bash_command": "echo $RANDOM % 10 + 1 | bc",
+    "export_method": "textfile"
   }
 }
