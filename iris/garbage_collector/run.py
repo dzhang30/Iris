@@ -21,8 +21,12 @@ def run_garbage_collector(global_config_path: str, local_config_path: str, prom_
             logger.info('Starting linter to transform the configs created by the config_service into python objs')
 
             linter = Linter(logger=logger)
-            global_config_obj = linter.lint_global_config(global_config_path)
-            local_config_obj = linter.lint_metrics_config(global_config_obj, local_config_path)
+
+            try:
+                global_config_obj = linter.lint_global_config(global_config_path)
+                local_config_obj = linter.lint_metrics_config(global_config_obj, local_config_path)
+            except OSError:
+                local_config_obj = {}
 
             gc = GarbageCollector(
                 local_config_obj=local_config_obj,
