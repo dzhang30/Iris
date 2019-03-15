@@ -15,11 +15,23 @@ class EC2Tags:
     aws_creds_path: str
     region_name: str
     ec2_metadata_url: str
-    dev_instance_id: str
     dev_mode: bool
+    dev_instance_id: str
     logger: Logger
 
     def __post_init__(self) -> None:
+        """
+        The EC2Tags class is responsible for querying the specific Iris tags on the host that's currently running Iris
+
+        :param aws_creds_path: path to the aws_credentials file
+        :param region_name: region that the ec2 instance is in
+        :param ec2_metadata_url: the metadata url that allows the instance to get info of itself, defined in iris.cfg
+        :param dev_mode: set to True when you want to run in dev mode, see readme & iris.cfg
+        :param dev_instance_id: the instance id of the host you want to test in dev mode, see readme & iris.cfg. This
+        field is not set by default in iris.cfg when running on a host. It must be manually set by the tester
+        :param logger: logger for forensics
+        :return: None
+        """
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
 
         os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.aws_creds_path
@@ -30,6 +42,14 @@ class EC2Tags:
             self.instance_id = self._request_instance_id()
 
     def get_iris_tags(self) -> Dict[str, str]:
+        """
+        Retrieve the iris tags on the current host running Iris
+        We have defined the iris tags to be:
+        ihr:iris:profile
+        ihr:iris:enabled
+
+        :return: a dict containing tags for iris to determine which profile config it needs to run (if any)
+        """
         instance_tags: List = []
         ec2_error = ClientError({}, '')
 
@@ -60,16 +80,18 @@ class EC2Tags:
         return iris_tags
 
     def _extract_iris_tags(self, instance_tags: List) -> Dict[str, str]:
+        """
+        Helper method to for get_iris_tags to extract the defined iris tags
+
+        :param instance_tags: a list of the tags on the current ec2 host returned by boto3
+        :return: a dict containing tags for iris to determine which profile config it needs to run (if any)
+        """
         iris_tags = {}
         for tag in instance_tags:
             if tag['Key'] == 'ihr:iris:profile':
                 iris_tags['ihr:iris:profile'] = tag['Value']
             if tag['Key'] == 'ihr:iris:enabled':
                 iris_tags['ihr:iris:enabled'] = tag['Value']
-            if tag['Key'] == 'ihr:application:environment':
-                iris_tags['ihr:application:environment'] = tag['Value']
-            if tag['Key'] == 'Name':
-                iris_tags['name'] = tag['Value']
 
         if 'ihr:iris:profile' not in iris_tags or 'ihr:iris:enabled' not in iris_tags:
             err_msg_format = 'Instance {} does not have tags ihr:iris:profile & ihr:iris:enabled. It only has {}'
@@ -80,6 +102,11 @@ class EC2Tags:
         return iris_tags
 
     def _request_instance_id(self) -> str:
+        """
+        Get the instance id of the current ec2 host by utilizing the ec2_metadata_url, the url is defined in iris.cfg
+
+        :return: the instance id of the ec2 host
+        """
         instance_id_url = '{0}/instance-id'.format(self.ec2_metadata_url)
         try:
             return requests.get(instance_id_url).text
@@ -90,4 +117,14 @@ class EC2Tags:
 
 
 class MissingIrisTagsError(KeyError):
+    """
+    Specific Exception thrown when ec2 host running Iris doesn't have the necessary tags
+    """
+    pass
+
+
+class IrisNotEnabledException(Exception):
+    """
+    Specific Exception for when the ihr:iris:enabled is set to False
+    """
     pass

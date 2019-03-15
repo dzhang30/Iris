@@ -19,15 +19,11 @@ def test_successful_get_tags(mock_requests, mock_boto3):
     mock_boto3.Session.return_value.resource.return_value.Instance.return_value.tags = [
         {'Key': 'ihr:iris:profile', 'Value': 'test0'},
         {'Key': 'ihr:iris:enabled', 'Value': 'true'},
-        {'Key': 'ihr:application:environment', 'Value': 'test_env'},
-        {'Key': 'Name', 'Value': 'test_host'}
     ]
 
     expected_result = {
         'ihr:iris:profile': 'test0',
         'ihr:iris:enabled': 'true',
-        'ihr:application:environment': 'test_env',
-        'name': 'test_host'
     }
 
     ec2_tags = get_test_ec2_tags_instance()

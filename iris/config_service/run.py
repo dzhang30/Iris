@@ -14,6 +14,27 @@ def run_config_service(aws_creds_path: str, s3_region_name: str, s3_bucket_env: 
                        s3_download_to_path: str, ec2_region_name: str, ec2_dev_instance_id: str, ec2_metadata_url: str,
                        local_config_path: str, prom_dir_path: str, run_frequency: float, log_path: str,
                        log_debug_path: str, dev_mode: bool) -> None:
+    """
+    Run the Config Service with each of its components (S3, Linter, EC2Tags)
+
+    :param aws_creds_path: path to the aws_credentials file
+    :param s3_region_name: region that the S3 bucket is in
+    :param s3_bucket_env: the bucket_environment/aws_profile_name, is the env the bucket is in ie prod/nonprod
+    :param s3_bucket_name: the name of the bucket
+    :param s3_download_to_path: the path to download the bucket content/configs
+    :param ec2_region_name: region that the ec2 instance is in
+    :param ec2_dev_instance_id: the instance id of the host you want to test in dev mode, see readme & iris.cfg. This
+    field is not set by default in iris.cfg when running on a host. It must be manually set by the tester for debugging
+    :param ec2_metadata_url: the metadata url that allows the instance to get info of itself, defined in iris.cfg
+    :param local_config_path: the path we want to write the local config object to. The local config object contains
+    the list of metrics the current ec2 host needs to run
+    :param prom_dir_path: the path to the prom files directory that we write metric results to
+    :param run_frequency: the frequency to which we run the config service
+    :param log_path: the path to the config_service log file
+    :param log_debug_path: the path to the iris.debug file that triggers when we want to enable verbose logging
+    :param dev_mode: set to True when you want to run in dev mode, see readme & iris.cfg
+    :return: None
+    """
     logger = get_logger('iris.config_service', log_path, log_debug_path)
 
     general_error_flag = False

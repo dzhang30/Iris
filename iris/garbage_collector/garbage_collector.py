@@ -8,12 +8,27 @@ from iris.config_service.configs import Metric
 
 @dataclass
 class GarbageCollector():
+    """
+    The GarbageCollector cleans up any stale prom files that shouldn't be scraped by prometheus anymore. These
+    stale prom files can be the result of updating old metrics or accidental manual additions to the prom_dir
+
+    :param local_config_obj: the local config object containing the current metrics that Iris should run
+    :param internal_metrics_whitelist: the whitelist of internal metrics that the GarbageCollector shouldn't clean
+    :param prom_dir_path: the path to the prom files directory where we look for stale prom files
+    :param logger: logger for forensics
+    """
     local_config_obj: Dict[str, Metric]
     internal_metrics_whitelist: Tuple
     prom_dir_path: str
     logger: Logger
 
     def delete_stale_prom_files(self) -> List[str]:
+        """
+        Remove the stale prom files in the prom_dir_path by looking at the current local_config object and internal
+        metrics whitelist
+
+        :return: a list of deleted stale prom file
+        """
         deleted_files = []
 
         # remove stale custom metric prom files
