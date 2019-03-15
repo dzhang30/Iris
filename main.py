@@ -2,7 +2,7 @@ import os
 import sys
 from configparser import ConfigParser
 
-import daemon
+# import daemon
 
 from iris.run import run_iris
 from iris.utils.iris_logging import get_logger
@@ -13,6 +13,13 @@ CONFIG_NAME = 'iris.cfg'
 
 
 def main(iris_config: ConfigParser) -> None:
+    """
+    The starting point of Iris. Creates the log directory and shoots off the Iris main process, which in turn starts its
+    sub processes (Config_Service, Scheduler, Garbage_Collector)
+
+    :param iris_config: the iris.cfg config file object
+    :return: None
+    """
     iris_root_path = iris_config['main_settings']['iris_root_path']
 
     log_directory_path = os.path.join(iris_root_path, 'logs')
@@ -35,5 +42,6 @@ if __name__ == '__main__':
 
     iris_config = read_config_file(iris_config_path)
 
-    with daemon.DaemonContext():
-        main(iris_config)
+    main(iris_config)
+    # with daemon.DaemonContext():
+    #     main(iris_config)

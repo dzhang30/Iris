@@ -3,6 +3,13 @@ from configparser import ConfigParser
 
 
 def check_iris_dev_settings(iris_config: ConfigParser, logger: logging.Logger) -> None:
+    """
+    Check if the Iris dev/test settings are set correctly in the iris.cfg IF the dev_mode field is set to True
+
+    :param iris_config: the iris.cfg config file object
+    :param logger: logger for forensics
+    :return: None
+    """
     try:
         dev_mode = iris_config.getboolean('main_settings', 'dev_mode')
     except ValueError as e:

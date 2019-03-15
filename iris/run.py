@@ -9,6 +9,7 @@ from typing import Optional
 from iris.config_service.run import run_config_service
 from iris.garbage_collector.run import run_garbage_collector
 from iris.scheduler.run import run_scheduler
+from iris.utils.iris_logging import get_logger
 from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 # Version constants - these will be updated at build time.
@@ -33,6 +34,13 @@ internal_metrics_whitelist = (
 
 
 def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
+    """
+    Run the main Iris process
+
+    :param logger: logger for forensics
+    :param iris_config: iris.cfg config file object
+    :return: None
+    """
     try:
         iris_main_settings = iris_config['main_settings']
 
@@ -171,9 +179,9 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
 
         # monitor the child processes (config_service, scheduler, etc.) & write to iris-{service}-up.prom files
         child_processes = [
-            ChildProcess(config_service_process),
-            ChildProcess(scheduler_process),
-            ChildProcess(garbage_collector_process),
+            ChildProcess(config_service_process, config_service_log_path, log_debug_file_path),
+            ChildProcess(scheduler_process, scheduler_log_path, log_debug_file_path),
+            ChildProcess(garbage_collector_process, garbage_collector_log_path, log_debug_file_path),
         ]
         while True:
             logger.info('Monitoring child services: {}'.format(', '.join([child.name for child in child_processes])))
@@ -227,18 +235,48 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
 @dataclass
 class ChildProcess:
     _process: multiprocessing.Process
+    log_file_path: str
+    log_debug_file_path: str
     already_logged: bool = False
 
     def __post_init__(self) -> None:
+        """
+        A ChildProcess represents each subprocess that the main Iris process spawns (ie Config_Service, Scheduler, etc)
+
+        This class helps the main process above determine if it still needs to log that a Child process is down or not.
+        If a child process is terminated, then this main process should log that and not log again for that same child
+
+        :param process: the child process
+        :param log_file_path: the path to the Child process' iris service log file
+        :param log_debug_file_path: the path to the iris.debug file that triggers when we want to enable verbose logging
+        :param already_logged: boolean field that determines if the child process has been logged by the main parent
+        process
+        :return:None
+        """
         self.pid = self._process.pid
         self.name = self._process.name
 
     def is_alive(self) -> bool:
+        """
+        Check if this child process is alive
+
+        :return: True if alive, else False
+        """
         return self._process.is_alive()
 
     def get_exit_code(self) -> Optional[int]:
+        """
+        Get the exit code of this child process
+
+        :return: the exit code of the child process
+        """
         return self._process.exitcode
 
     def log_terminate(self) -> None:
-        logger = logging.getLogger('iris.{}'.format(self.name))
+        """
+        Log to this child process' log file once it terminates
+
+        :return:None
+        """
+        logger = get_logger('iris.{}'.format(self.name), self.log_file_path, self.log_debug_file_path)
         logger.error('Terminated the {} with exit_code {}'.format(self.name, self.get_exit_code()))

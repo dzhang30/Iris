@@ -10,6 +10,19 @@ from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path: str, run_frequency: float,
                   internal_metrics_whitelist: Tuple[str], log_path: str, log_debug_path: str, ) -> None:
+    """
+    Run the Scheduler
+
+    :param global_config_path: the path to the GlobalConfig object pulled down by the Config Service
+    :param local_config_path: the path to the local config object created by the Config Service
+    :param prom_dir_path: the path to the prom files directory that we write metric results to
+    :param run_frequency: the frequency to which we run the scheduler
+    :param internal_metrics_whitelist: a list of internal metrics that we don't want to count in the
+    iris_custom_metrics_count metric
+    :param log_path: the path to the scheduler log file
+    :param log_debug_path: the path to the iris.debug file that triggers when we want to enable verbose logging
+    :return: None
+    """
     logger = get_logger('iris.scheduler', log_path, log_debug_path)
 
     error_flag = 0
