@@ -7,6 +7,14 @@ from iris.utils import util
 
 @dataclass
 class GlobalConfig:
+    """
+    The GlobalConfig contains fields/values that determine the bounds that Metric fields must follow
+
+    :param exec_timeout: the global execution timeout
+    :param min_exec_freq: the global minimum execution frequency
+    :param max_exec_freq: the global maximum execution frequency
+    :param logger: logger for forensics
+    """
     exec_timeout: int
     min_exec_freq: int
     max_exec_freq: int
@@ -14,14 +22,8 @@ class GlobalConfig:
 
     def __post_init__(self) -> None:
         """
-        The GlobalConfig contains fields/values that determine the bounds that Metric fields must follow
-
         Check if the format of the GlobalConfig is correct
 
-        :param exec_timeout: the global execution timeout
-        :param min_exec_freq: the global minimum execution frequency
-        :param max_exec_freq: the global maximum execution frequency
-        :param logger: logger for forensics
         :return: None, raises ValueError if the fields are not set correctly
         """
         if not 1 < self.min_exec_freq < self.max_exec_freq:
@@ -42,6 +44,18 @@ class GlobalConfig:
 
 @dataclass
 class Metric:
+    """
+    A Metric object that contains all of the metadata of the check/metric that needs to be executed/ran
+
+    :param gc: the GlobalConfig object
+    :param name: the metric name
+    :param metric_type: the type of the metric, see valid_metric_types above
+    :param execution_frequency: the metric_execution frequency
+    :param export_method: the export method the metric uses to expose itself, see valid_export_methods above
+    :param bash_command: the bash command that Iris actually runs to get the result of this metric
+    :param help: the help string that describes what the metric does
+    :param logger: logger for forensics
+    """
     gc: GlobalConfig
     name: str
     metric_type: str
@@ -56,18 +70,8 @@ class Metric:
 
     def __post_init__(self) -> None:
         """
-        A Metric object that contains all of the metadata of the check/metric that needs to be executed/ran
-
         Check if the format of the Metric is correct
 
-        :param gc: the GlobalConfig object
-        :param name: the metric name
-        :param metric_type: the type of the metric, see valid_metric_types above
-        :param execution_frequency: the metric_execution frequency
-        :param export_method: the export method the metric uses to expose itself, see valid_export_methods above
-        :param bash_command: the bash command that Iris actually runs to get the result of this metric
-        :param help: the help string that describes what the metric does
-        :param logger: logger for forensics
         :return: None, raises ValueError if the fields are not set correctly
         """
         if self.metric_type not in self.valid_metric_types:
@@ -116,19 +120,21 @@ class Metric:
 
 @dataclass
 class Profile:
+    """
+    A Profile object that contains all of the metrics that the ec2 host needs to run
+
+    :param name: the name of the profile
+    :param metrics: a list of metric objects that the host needs to run
+    :param logger: logger for forensics
+    """
     name: str
     metrics: List[str]
     logger: Logger
 
     def __post_init__(self) -> None:
         """
-        A Profile object that contains all of the metrics that the ec2 host needs to run
-
         Check if the format of the Profile is correc
 
-        :param name: the name of the profile
-        :param metrics: a list of metric objects that the host needs to run
-        :param logger: logger for forensics
         :return: None, raises ValueError if the fields are not set correctly
         """
         util.detect_list_duplicates(self.metrics, '{} profile metrics'.format(self.name), self.logger)

@@ -12,6 +12,15 @@ LabelTypes = Optional[Union[Dict, SectionProxy]]
 
 @dataclass
 class PromStrBuilder:
+    """
+    The PromStrBuilder is a class that helps transform a MetricResult into a string in .prom file format
+
+    :param metric_name: the name of the Metric we want to build a prom string from
+    :param metric_result: the MetricResult of the executed metric we want to build a prom string from
+    :param help_str: the help string that describes the metric
+    :param type_str: the type of the metric
+    :param labels: the labels that describe more details of the metric
+    """
     metric_name: str
     metric_result: float
     help_str: str
@@ -20,13 +29,8 @@ class PromStrBuilder:
 
     def __post_init__(self) -> None:
         """
-        The PromStrBuilder is a class that helps transform a MetricResult into a string in .prom file format
+        Add the iris_ prefix to the metric if it is not in the metric name. Create the help_str and type_str
 
-        :param metric_name: the name of the Metric we want to build a prom string from
-        :param metric_result: the MetricResult of the executed metric we want to build a prom string from
-        :param help_str: the help string that describes the metric
-        :param type_str: the type of the metric
-        :param labels: the labels that describe more details of the metric
         :return: None
         """
         iris_prefix_found = re.search('^iris', self.metric_name, re.IGNORECASE)

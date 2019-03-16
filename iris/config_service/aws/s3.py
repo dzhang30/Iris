@@ -11,6 +11,16 @@ from iris.utils import util
 
 @dataclass
 class S3:
+    """
+    The S3 class pulls all of the necessary config files that Iris needs to run from the specified bucket
+
+    :param aws_creds_path: path to the aws_credentials file
+    :param region_name: region that the S3 bucket is in
+    :param bucket_environment: the bucket_environment/aws_profile_name, is the env the bucket is in ie prod/nonprod
+    :param bucket_name: the name of the bucket
+    :param dev_mode: set to True when you want to run in dev mode, see readme & iris.cfg
+    :param logger: logger for forensics
+    """
     aws_creds_path: str
     region_name: str
     bucket_environment: str
@@ -20,15 +30,10 @@ class S3:
 
     def __post_init__(self) -> None:
         """
-        The S3 class pulls all of the necessary config files that Iris needs to run from the specified bucket
+        Check if the aws_creds_file exists and set the AWS_SHARED_CREDENTIALS_FILE env variable. Initialize the S3
+        Bucket object via boto3
 
-        :param aws_creds_path: path to the aws_credentials file
-        :param region_name: region that the S3 bucket is in
-        :param bucket_environment: the bucket_environment/aws_profile_name, is the env the bucket is in ie prod/nonprod
-        :param bucket_name: the name of the bucket
-        :param dev_mode: set to True when you want to run in dev mode, see readme & iris.cfg
-        :param logger: logger for forensics
-        :return:
+        :return: None
         """
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)
 

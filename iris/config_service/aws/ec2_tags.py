@@ -12,6 +12,17 @@ from iris.utils import util
 
 @dataclass
 class EC2Tags:
+    """
+    The EC2Tags class is responsible for querying the specific Iris tags on the host that's currently running Iris
+
+    :param aws_creds_path: path to the aws_credentials file
+    :param region_name: region that the ec2 instance is in
+    :param ec2_metadata_url: the metadata url that allows the instance to get info of itself, defined in iris.cfg
+    :param dev_mode: set to True when you want to run in dev mode, see readme & iris.cfg
+    :param dev_instance_id: the instance id of the host you want to test in dev mode, see readme & iris.cfg. This
+    field is not set by default in iris.cfg when running on a host. It must be manually set by the tester
+    :param logger: logger for forensics
+    """
     aws_creds_path: str
     region_name: str
     ec2_metadata_url: str
@@ -21,15 +32,10 @@ class EC2Tags:
 
     def __post_init__(self) -> None:
         """
-        The EC2Tags class is responsible for querying the specific Iris tags on the host that's currently running Iris
+        Check if the aws_creds_file exists and set the AWS_SHARED_CREDENTIALS_FILE env variable. Retrieve the current
+        ec2 host's instance id. If running in dev_mode, then retrieve the ec2 instance id defined in the
+        ec2_dev_instance_id field in iris.cfg
 
-        :param aws_creds_path: path to the aws_credentials file
-        :param region_name: region that the ec2 instance is in
-        :param ec2_metadata_url: the metadata url that allows the instance to get info of itself, defined in iris.cfg
-        :param dev_mode: set to True when you want to run in dev mode, see readme & iris.cfg
-        :param dev_instance_id: the instance id of the host you want to test in dev mode, see readme & iris.cfg. This
-        field is not set by default in iris.cfg when running on a host. It must be manually set by the tester
-        :param logger: logger for forensics
         :return: None
         """
         util.check_file_exists(file_path=self.aws_creds_path, file_type='aws_credentials', logger=self.logger)

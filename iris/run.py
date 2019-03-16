@@ -234,23 +234,27 @@ def run_iris(logger: logging.Logger, iris_config: ConfigParser) -> None:
 
 @dataclass
 class ChildProcess:
-    _process: multiprocessing.Process
+    """
+    A ChildProcess represents each subprocess that the main Iris process spawns (ie Config_Service, Scheduler, etc)
+
+    This class helps the main process above determine if it still needs to log that a Child process is down or not.
+    If a child process is terminated, then this main process should log that and not log again for that same child
+
+    :param process: the child process
+    :param log_file_path: the path to the Child process' iris service log file
+    :param log_debug_file_path: the path to the iris.debug file that triggers when we want to enable verbose logging
+    :param already_logged: boolean field that determines if the child process has been logged by the main parent
+    process
+    """
     log_file_path: str
     log_debug_file_path: str
+    _process: multiprocessing.Process
     already_logged: bool = False
 
     def __post_init__(self) -> None:
         """
-        A ChildProcess represents each subprocess that the main Iris process spawns (ie Config_Service, Scheduler, etc)
+        Set this instance's pid and name fields to that of the passed in child process' pid and name
 
-        This class helps the main process above determine if it still needs to log that a Child process is down or not.
-        If a child process is terminated, then this main process should log that and not log again for that same child
-
-        :param process: the child process
-        :param log_file_path: the path to the Child process' iris service log file
-        :param log_debug_file_path: the path to the iris.debug file that triggers when we want to enable verbose logging
-        :param already_logged: boolean field that determines if the child process has been logged by the main parent
-        process
         :return:None
         """
         self.pid = self._process.pid

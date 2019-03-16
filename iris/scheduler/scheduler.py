@@ -11,6 +11,16 @@ from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 @dataclass
 class MetricResult:
+    """
+    A MetricResult object contains all of the metadata related to the actual execution of the Metric command
+
+    :param metric: a Metric object that contains the metadata needed to run the metric
+    :param pid: the pid of the subprocess running this metric
+    :param timeout: a boolean value that states whether the metric timedout or not
+    :param return_code: the return code of running the bash command
+    :param shell_output: the string output of running the bash command. This is visible in logs in debug mode
+    :param logger: logger for forensics
+    """
     metric: Metric
     pid: int
     timeout: bool
@@ -22,16 +32,8 @@ class MetricResult:
 
     def __post_init__(self) -> None:
         """
-        A MetricResult object contains all of the metadata related to the actual execution of the Metric command
-
         Check if the format of the MetricResult is correct
 
-        :param metric: a Metric object that contains the metadata needed to run the metric
-        :param pid: the pid of the subprocess running this metric
-        :param timeout: a boolean value that states whether the metric timedout or not
-        :param return_code: the return code of running the bash command
-        :param shell_output: the string output of running the bash command. This is visible in logs in debug mode
-        :param logger: logger for forensics
         :return: None, raises ValueError if the fields are not set correctly
         """
         if self.return_code != 0:
