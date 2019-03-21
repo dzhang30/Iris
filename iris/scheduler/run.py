@@ -9,7 +9,7 @@ from iris.utils.prom_helpers import PromStrBuilder, PromFileWriter
 
 
 def run_scheduler(global_config_path: str, local_config_path: str, prom_dir_path: str, run_frequency: float,
-                  internal_metrics_whitelist: Tuple[str], log_path: str, log_debug_path: str, ) -> None:
+                  internal_metrics_whitelist: Tuple[str], log_path: str, log_debug_path: str) -> None:
     """
     Run the Scheduler
 
