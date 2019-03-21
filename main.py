@@ -2,7 +2,7 @@ import os
 import sys
 from configparser import ConfigParser
 
-# import daemon
+import daemon
 
 from iris.run import run_iris
 from iris.utils.iris_logging import get_logger
@@ -42,6 +42,5 @@ if __name__ == '__main__':
 
     iris_config = read_config_file(iris_config_path)
 
-    main(iris_config)
-    # with daemon.DaemonContext():
-    #     main(iris_config)
+    with daemon.DaemonContext():
+        main(iris_config)
