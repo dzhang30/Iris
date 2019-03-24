@@ -113,3 +113,6 @@ prom_files
 
 # Local testing aws credentials
 aws_credentials
+
+# scripts used for local testing each subprocess separately
+scripts
