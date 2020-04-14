@@ -246,9 +246,9 @@ class ChildProcess:
     :param already_logged: boolean field that determines if the child process has been logged by the main parent
     process
     """
+    _process: multiprocessing.Process
     log_file_path: str
     log_debug_file_path: str
-    _process: multiprocessing.Process
     already_logged: bool = False
 
     def __post_init__(self) -> None:
