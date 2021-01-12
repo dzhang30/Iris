@@ -24,7 +24,7 @@ requires = [
     'py==1.7.0',
     'pycodestyle==2.4.0',
     'pyflakes==2.0.0',
-    'pyinstaller==3.4',
+    'pyinstaller==3.6',
     'pytest==3.10.0',
     'pytest-asyncio==0.9.0',
     'pytest-mock==1.10.1',
