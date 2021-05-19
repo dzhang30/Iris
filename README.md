@@ -1,12 +1,11 @@
-# Design Doc
-This is the project that I created at iheartradio. I am the sole engineering contributer
+# Design Doc                     
 https://docs.google.com/document/d/1xIBwOCU0p7NjxlX5_Y98w9nitYV5z7rnCT491lMl-QE/edit?usp=sharing
 
 # Iris
 There is a need to capture metrics beyond the basics of what are provided by the Prometheus Node Exporter installed on all hosts. Additional metrics may be related to the application running on a specific host or hosts, specialized system checks beyond the scope of the node exporter, or other metrics that will replace Nagios or CheckMK.
 
-## One-Time Setup
-Install `brew` and `python 3.7` (based on your setup, you might have to specify python version in the command line )
+## One-Time Setup 
+Install `brew` and `python 3.7` (based on your setup, you might have to specify python version in the command line)
 
 These steps will install the pre-requisites for running iris on your local machine.
 
@@ -29,7 +28,7 @@ which python3.7
 * Install iris into your virtual environment
 
 ```bash
-git clone git@github.com:iheartradio/iris.git
+git clone git@github.com:XXX/iris.git
 cd iris
 
 # Create a venv directory to hold our virtual environment. Point it to python3.7
@@ -97,7 +96,7 @@ To run and test the Iris code locally:
     }
     ```
 * create a new profile config or edit an existing one in `/opt/iris/downloads/profiles/` for the test instance specified by the `ec2_dev_instance_id` field in `iris.cfg`
-    * name the file after the host name (if `host_name = stg-tvclient101.ihrcloud.net`, then name the file `tvclient.json`).
+    * name the file after the host name (if `host_name = testclient101.net`, then name the file `testclient101.json`).
     * profile config file format:
     ```
     # test_instance_name.json
@@ -112,9 +111,9 @@ To run and test the Iris code locally:
     }
     ```
 * create the iris tags for the ec2 instance you are testing on
-    * add `ihr:iris:profile` tag and set it to the profile config name without the `.json` suffix
-        * e.g. `ihr:iris:enabled = tvclient` for the `stg-tvclient101.ihrcloud.net` host
-    * add `ihr:iris:enabled = True`
+    * add `xxx:iris:profile` tag and set it to the profile config name without the `.json` suffix
+        * e.g. `xxx:iris:enabled = tvclient` for the `testclient101.net` host
+    * add `xxx:iris:enabled = True`
   
 
 Make sure that these requirements are fulfilled to complete testing:
@@ -125,7 +124,7 @@ Make sure that these requirements are fulfilled to complete testing:
 ## Unit Testing, Linting, Type Checking and Coverage
 We use `Tox` to automate and run our testing environment. This includes running `coverage`, `pytest` via setup.py test, `mypy` for type checking, and `flake8` for linting  
 
-```bash
+```bash               
 tox
 ```
 
