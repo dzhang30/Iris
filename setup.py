@@ -6,7 +6,7 @@ requires = [
     'attrs==18.2.0',
     'boto3==1.9.66',
     'botocore==1.12.66',
-    'certifi==2018.10.15',
+    'certifi==2022.12.7',
     'chardet==3.0.4',
     'coverage==4.5.2',
     'docutils==0.14',
