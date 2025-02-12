@@ -2,7 +2,7 @@
 https://docs.google.com/document/d/1xIBwOCU0p7NjxlX5_Y98w9nitYV5z7rnCT491lMl-QE/edit?usp=sharing
 
 # Iris
-There is a need to capture metrics beyond the basics of what are provided by the Prometheus Node Exporter installed on all hosts. Additional metrics may be related to the application running on a specific host or hosts, specialized system checks beyond the scope of the node exporter, or other metrics that will replace Nagios or CheckMK.
+There is a need to capture metrics beyond the basics of what are provided by the Prometheus Node Exporter installed on all hosts. Additional metrics may be related to the application running on a specific host(s), specialized system checks beyond the scope of the node exporter, or other metrics that will replace Nagios or CheckMK.
 
 ## One-Time Setup 
 Install `brew` and `python 3.7` (based on your setup, you might have to specify python version in the command line)
@@ -112,7 +112,7 @@ To run and test the Iris code locally:
     ```
 * create the iris tags for the ec2 instance you are testing on
     * add `xxx:iris:profile` tag and set it to the profile config name without the `.json` suffix
-        * e.g. `xxx:iris:enabled = tvclient` for the `testclient101.net` host
+        * e.g. `xxx:iris:profile = tvclient` for the `testclient101.net` host
     * add `xxx:iris:enabled = True`
   
 
