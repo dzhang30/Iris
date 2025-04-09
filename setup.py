@@ -36,7 +36,7 @@ requires = [
     'toml==0.10.0',
     'tox==3.6.0',
     'typed-ast==1.1.0',
-    'urllib3==1.23',
+    'urllib3==1.26.5',
 ]
 
 setup(
